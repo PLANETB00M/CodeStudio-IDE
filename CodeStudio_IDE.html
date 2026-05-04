@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5658,6 +5659,9 @@
         let isHost = false;
         let collabUsers = [];
         let myCollabName = (userData && userData.name) ? userData.name : "Fetching IP…";
+        let followMeActive = false;
+        let isBeingFollowed = false;
+        let sessionPaused = false;
 
         // Fetch the guest's public IP and use it as the display name (only when not logged in)
         if (!(userData && userData.name)) {
@@ -8646,8 +8650,7 @@
                 // Update registry player count (collabUsers already includes host, +1 for the joiner)
                 if (collabRoom) {
                     const pc = (collabUsers.length || 1) + 1;
-                    if (_isRegistry && _registryData[collabRoom]) { _registryData[collabRoom].players = pc; }
-                    else { _updateRegistryPlayerCount(collabRoom, pc); }
+                    _updateRegistryPlayerCount(collabRoom, pc);
                 }
                 // Optimistically update the nav pill so host sees correct count immediately
                 updateServerRoomDisplay && updateServerRoomDisplay();
@@ -8667,11 +8670,12 @@
         //  ROOM BROWSER + REGISTRY SYSTEM
         // ════════════════════════════════════════════════
 
-        let _roomVisibility = 'public'; // 'public' | 'private'
-        let _registryPeer = null;       // separate peer used only for registry
-        let _registryConn = null;
-        let _roomRegistry = {};         // { peerId: { name, host, locked, players, created } }
-        const REGISTRY_ID = 'cs-lobby-registry-v3';
+        // ════════════════════════════════════════════════
+        //  ROOM BROWSER + REGISTRY SYSTEM (Firebase)
+        // ════════════════════════════════════════════════
+
+        let _roomVisibility = 'public';
+        const _FB_ROOMS_REF = () => window._fbDB ? window._fbDB.ref('rooms') : null;
 
         function setRoomVisibility(v) {
             _roomVisibility = v;
@@ -8697,39 +8701,25 @@
         async function loadPublicRooms() {
             const list = document.getElementById('roomBrowserList');
             if (!list) return;
-            list.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:12px;"><div class="ls-spinner" style="margin:0 auto 10px;"></div>Scanning for rooms…</div>';
-
-            // Destroy any previous registry peer
-            if (_registryPeer) { try { _registryPeer.destroy(); } catch(e){} _registryPeer = null; }
-
-            let resolved = false;
-            const timeout = setTimeout(() => {
-                if (!resolved) { resolved = true; renderRoomList({}); }
-            }, 8000);
+            list.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:12px;"><div class="ls-spinner" style="margin:0 auto 10px;"></div>Loading rooms…</div>';
 
             try {
-                _registryPeer = new Peer();
-                _registryPeer.on('open', () => {
-                    try {
-                        const conn = _registryPeer.connect(REGISTRY_ID, { reliable: true });
-                        conn.on('open', () => {
-                            conn.send({ type: 'list_rooms' });
-                        });
-                        conn.on('data', (msg) => {
-                            if (msg.type === 'room_list' && !resolved) {
-                                resolved = true;
-                                clearTimeout(timeout);
-                                renderRoomList(msg.rooms || {});
-                                try { conn.close(); } catch(e){}
-                                try { _registryPeer.destroy(); } catch(e){} _registryPeer = null;
-                            }
-                        });
-                        conn.on('error', () => { if (!resolved) { resolved = true; clearTimeout(timeout); renderRoomList({}); } });
-                        setTimeout(() => { if (!resolved) { resolved = true; clearTimeout(timeout); renderRoomList({}); } }, 5000);
-                    } catch(e) { if (!resolved) { resolved = true; clearTimeout(timeout); renderRoomList({}); } }
+                // Wait for Firebase to be ready
+                await new Promise(res => { const c = () => window._fbReady ? res() : setTimeout(c, 80); c(); });
+                const snap = await _FB_ROOMS_REF().once('value');
+                const rooms = snap.val() || {};
+                // Clean up stale rooms (older than 4 hours)
+                const now = Date.now();
+                const fresh = {};
+                Object.entries(rooms).forEach(([k, v]) => {
+                    if (v && v.created && (now - v.created) < 4 * 60 * 60 * 1000) fresh[k] = v;
+                    else if (v && !v.created) fresh[k] = v;
                 });
-                _registryPeer.on('error', () => { if (!resolved) { resolved = true; clearTimeout(timeout); renderRoomList({}); } });
-            } catch(e) { if (!resolved) { resolved = true; clearTimeout(timeout); renderRoomList({}); } }
+                renderRoomList(fresh);
+            } catch(e) {
+                console.error('Firebase loadPublicRooms error:', e);
+                renderRoomList({});
+            }
         }
 
         function renderRoomList(rooms) {
@@ -8857,78 +8847,44 @@
             joinRoom();
         }
 
-        // Registry peer: the host of REGISTRY_ID peer acts as a bulletin board
-        // Since we can't guarantee one machine is always online, we use a "best effort"
-        // approach: each host also tries to BE the registry if it's unclaimed.
-        let _isRegistry = false;
-        let _registryData = {};  // rooms stored when we are the registry
-        let _registryConnections = [];
+        // ── Firebase Room Registry ──────────────────────
+        let _isRegistry = false;   // kept for compatibility checks
+        let _registryData = {};    // kept for compatibility checks
 
         function _tryBecomeRegistry(onReady) {
-            const rp = new Peer(REGISTRY_ID);
-            rp.on('open', () => {
-                _isRegistry = true;
-                _registryConnections = [];
-                rp.on('connection', (conn) => {
-                    _registryConnections.push(conn);
-                    conn.on('data', (msg) => {
-                        if (msg.type === 'register_room') {
-                            _registryData[msg.peerId] = msg.info;
-                            // broadcast update to all connected browsers
-                            _registryConnections.forEach(c => { try { c.send({ type: 'room_list', rooms: _registryData }); } catch(e){} });
-                        } else if (msg.type === 'unregister_room') {
-                            delete _registryData[msg.peerId];
-                        } else if (msg.type === 'list_rooms') {
-                            try { conn.send({ type: 'room_list', rooms: _registryData }); } catch(e){}
-                        } else if (msg.type === 'update_room') {
-                            if (_registryData[msg.peerId]) Object.assign(_registryData[msg.peerId], msg.update);
-                        }
-                    });
-                    conn.on('close', () => { _registryConnections = _registryConnections.filter(c => c !== conn); });
+            // Firebase handles registry — no peer needed
+            _isRegistry = false;
+            if (onReady) onReady(null);
+            return null;
+        }
+
+        async function _registerRoomWithRegistry(peerId, info) {
+            try {
+                await new Promise(res => { const c = () => window._fbReady ? res() : setTimeout(c, 80); c(); });
+                await _FB_ROOMS_REF().child(peerId).set({
+                    ...info,
+                    peerId,
+                    created: Date.now()
                 });
-                if (onReady) onReady(rp);
-            });
-            rp.on('error', (err) => {
-                // REGISTRY_ID already taken — fine, someone else is registry
-                if (onReady) onReady(null);
-            });
-            return rp;
+                // Auto-remove room when host disconnects
+                _FB_ROOMS_REF().child(peerId).onDisconnect().remove();
+                window._fbRoomPeerId = peerId;
+            } catch(e) { console.error('Firebase register room error:', e); }
         }
 
-        function _registerRoomWithRegistry(peerId, info) {
-            // Try to connect to registry and register
-            const rp = new Peer();
-            rp.on('open', () => {
-                try {
-                    const c = rp.connect(REGISTRY_ID, { reliable: true });
-                    c.on('open', () => {
-                        c.send({ type: 'register_room', peerId, info });
-                        // Keep connection open to send updates (player count, unregister)
-                        window._registryReportConn = c;
-                        window._registryReportPeer = rp;
-                    });
-                    c.on('error', () => { try { rp.destroy(); } catch(e){} });
-                } catch(e) { try { rp.destroy(); } catch(e2){} }
-            });
-            rp.on('error', () => {});
+        async function _unregisterRoom(peerId) {
+            try {
+                await new Promise(res => { const c = () => window._fbReady ? res() : setTimeout(c, 80); c(); });
+                await _FB_ROOMS_REF().child(peerId).remove();
+                window._fbRoomPeerId = null;
+            } catch(e) { console.error('Firebase unregister room error:', e); }
         }
 
-        function _unregisterRoom(peerId) {
-            if (window._registryReportConn) {
-                try { window._registryReportConn.send({ type: 'unregister_room', peerId }); } catch(e){}
-                try { window._registryReportConn.close(); } catch(e){}
-                window._registryReportConn = null;
-            }
-            if (window._registryReportPeer) {
-                try { window._registryReportPeer.destroy(); } catch(e){}
-                window._registryReportPeer = null;
-            }
-        }
-
-        function _updateRegistryPlayerCount(peerId, players) {
-            if (window._registryReportConn) {
-                try { window._registryReportConn.send({ type: 'update_room', peerId, update: { players } }); } catch(e){}
-            }
+        async function _updateRegistryPlayerCount(peerId, players) {
+            try {
+                if (!window._fbReady) return;
+                await _FB_ROOMS_REF().child(peerId).update({ players });
+            } catch(e) {}
         }
 
         // customPrompt helper (if not already defined)
@@ -9037,34 +8993,16 @@
                 initCollabUI();
                 renderLeaderboard();
 
-                // Register this room in the public registry (if public)
+                // Register this room in Firebase (if public)
                 if ((window._hostRoomVisibility || 'public') === 'public') {
-                    // First try to become registry, then register
-                    _tryBecomeRegistry((regPeer) => {
-                        if (!regPeer) {
-                            // Registry exists elsewhere, connect and register
-                            _registerRoomWithRegistry(id, {
-                                name: window._hostRoomDisplayName || 'Unnamed Room',
-                                host: myCollabName || 'Unknown',
-                                locked: !!(window._hostRoomPassword),
-                                players: 1,
-                                visibility: window._hostRoomVisibility || 'public',
-                                created: Date.now(),
-                                image: window._hostRoomImage || null
-                            });
-                        } else {
-                            // We ARE the registry - register ourselves directly
-                            _isRegistry = true;
-                            _registryData[id] = {
-                                name: window._hostRoomDisplayName || 'Unnamed Room',
-                                host: myCollabName || 'Unknown',
-                                locked: !!(window._hostRoomPassword),
-                                players: 1,
-                                visibility: window._hostRoomVisibility || 'public',
-                                created: Date.now(),
-                                image: window._hostRoomImage || null
-                            };
-                        }
+                    _registerRoomWithRegistry(id, {
+                        name: window._hostRoomDisplayName || 'Unnamed Room',
+                        host: myCollabName || 'Unknown',
+                        locked: !!(window._hostRoomPassword),
+                        players: 1,
+                        visibility: 'public',
+                        created: Date.now(),
+                        image: window._hostRoomImage || null
                     });
                 }
                 
@@ -9631,11 +9569,7 @@
             }
             // Unregister from room directory
             if (isHost && collabRoom) {
-                if (_isRegistry) {
-                    delete _registryData[collabRoom];
-                } else {
-                    _unregisterRoom(collabRoom);
-                }
+                _unregisterRoom(collabRoom);
             }
             if(peer) { try { peer.destroy(); } catch(e){} peer = null; }
             collabConnections = []; collabRoom = null; isHost = false; collabUsers = []; collabPerms = {}; collabPfps = {};
