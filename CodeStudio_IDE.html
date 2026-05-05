@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,11 +7,10 @@
     <meta name="theme-color" content="#0f0f13">
 
     <link rel="manifest" id="pwaManifest">
-
-    <!-- ── Prism syntax-highlight theme (runtime-swapped by theme picker) ── -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,10 88,28 50,46 12,28' fill='%23000'/%3E%3Cpolygon points='12,36 50,54 88,36 88,44 50,62 12,44' fill='%23000'/%3E%3Cpolygon points='12,52 50,70 88,52 88,60 50,78 12,60' fill='%23000'/%3E%3C/svg%3E">
     <link id="prismTheme" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
-    <!-- ── Strip all Prism token rectangle backgrounds ── -->
+ 
     <style>
         #highlightCode .token,
         #highlightCode .token.punctuation,
@@ -4220,6 +4218,7 @@
             </div>
             <button class="btn btn-refresh" onclick="forceRefresh()" title="Reload Preview Iframe"><i class="fas fa-rotate-right" id="refreshIcon"></i> Refresh</button>
             <button class="btn" id="manualSaveBtn" onclick="manualSave()" title="Save (Ctrl+S)" style="display:none;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.35);color:#f59e0b;font-weight:800;"><i class="fas fa-floppy-disk"></i> Save</button>
+            <button class="btn" id="pwaInstallBtn" onclick="if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();window._pwaInstallPrompt.userChoice.then(()=>{window._pwaInstallPrompt=null;document.getElementById('pwaInstallBtn').style.display='none';});}" title="Install CodeStudio as an app" style="display:none;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);color:#818cf8;"><i class="fas fa-desktop"></i> Install App</button>
             <button class="btn btn-export" onclick="toggleExportModal()"><i class="fas fa-download"></i> Export</button>
             <button class="btn" style="background: var(--accent-glow); border: 1px solid var(--border); color:var(--text);" onclick="document.getElementById('fileIn').click()"><i class="fas fa-upload"></i> Import</button>
             <input type="file" id="fileIn" style="display:none;" onchange="handleImport(event)">
@@ -15304,51 +15303,120 @@ function _mcClick(){}
 // <![CDATA[
 
 (function() {
-    // 1. Build & inject manifest as a blob URL
-    const manifest = {
-        name: "CodeStudio IDE",
-        short_name: "CodeStudio",
-        description: "A powerful in-browser code editor",
-        start_url: "./",
-        display: "standalone",
-        background_color: "#0f0f13",
-        theme_color: "#0f0f13",
-        orientation: "landscape",
-        icons: [
-            {
-                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f0f13'/%3E%3Ctext x='256' y='340' text-anchor='middle' font-size='300' font-family='monospace' fill='%233b82f6'%3E%7B%7D%3C/text%3E%3C/svg%3E",
-                sizes: "512x512",
-                type: "image/svg+xml",
-                purpose: "any maskable"
-            }
-        ]
-    };
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    document.getElementById('pwaManifest').setAttribute('href', url);
+    // Icon as base64 PNG (192x192 and 512x512) — Chrome rejects data: URIs in manifests
+    // This is a black 3-layer diamond on dark background rendered as base64 SVG→PNG via canvas
+    function makeIconDataURL(size) {
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        // Background
+        ctx.fillStyle = '#0f0f13';
+        ctx.beginPath();
+        ctx.roundRect(0, 0, size, size, size * 0.18);
+        ctx.fill();
+        // Scale factor
+        const s = size / 100;
+        ctx.fillStyle = '#000000';
+        // Top diamond layer
+        ctx.beginPath();
+        ctx.moveTo(50*s, 10*s); ctx.lineTo(88*s, 28*s); ctx.lineTo(50*s, 46*s); ctx.lineTo(12*s, 28*s);
+        ctx.closePath(); ctx.fill();
+        // Middle layer
+        ctx.beginPath();
+        ctx.moveTo(12*s, 36*s); ctx.lineTo(50*s, 54*s); ctx.lineTo(88*s, 36*s);
+        ctx.lineTo(88*s, 44*s); ctx.lineTo(50*s, 62*s); ctx.lineTo(12*s, 44*s);
+        ctx.closePath(); ctx.fill();
+        // Bottom layer
+        ctx.beginPath();
+        ctx.moveTo(12*s, 52*s); ctx.lineTo(50*s, 70*s); ctx.lineTo(88*s, 52*s);
+        ctx.lineTo(88*s, 60*s); ctx.lineTo(50*s, 78*s); ctx.lineTo(12*s, 60*s);
+        ctx.closePath(); ctx.fill();
+        return canvas.toDataURL('image/png');
+    }
 
-    // 2. Register inline service worker via blob
-    if ('serviceWorker' in navigator) {
-        const swCode = `
-const CACHE = 'codestudio-v1';
-self.addEventListener('install', e => {
-    self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-    e.waitUntil(clients.claim());
-});
+    const icon192 = makeIconDataURL(192);
+    const icon512 = makeIconDataURL(512);
+
+    // 1. Build manifest — icons must be same-origin URLs, so we use a fetch-intercepted URL
+    //    We register the SW first so it can intercept /pwa-icon-*.png requests
+    const swCode = `
+const CACHE = 'codestudio-v4';
+const ICON_192 = '${icon192}';
+const ICON_512 = '${icon512}';
+
+self.addEventListener('install', e => { self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
 self.addEventListener('fetch', e => {
+    const url = new URL(e.request.url);
+    if (url.pathname === '/pwa-icon-192.png') {
+        const parts = ICON_192.split(',');
+        const bin = atob(parts[1]);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        e.respondWith(new Response(arr, { headers: { 'Content-Type': 'image/png' } }));
+        return;
+    }
+    if (url.pathname === '/pwa-icon-512.png') {
+        const parts = ICON_512.split(',');
+        const bin = atob(parts[1]);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        e.respondWith(new Response(arr, { headers: { 'Content-Type': 'image/png' } }));
+        return;
+    }
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
 `;
+
+    // 2. Register SW via same-origin blob scope trick using importScripts workaround
+    //    We use a fetch-intercepted approach: serve SW from a real path via blob
+    if ('serviceWorker' in navigator) {
+        // Use a blob URL but register with scope '/' — Chrome allows blob-registered SWs
+        // to intercept if the scope matches. The key fix is the manifest icons use SW-served URLs.
         const swBlob = new Blob([swCode], { type: 'application/javascript' });
         const swUrl  = URL.createObjectURL(swBlob);
-        navigator.serviceWorker.register(swUrl).catch(() => {});
+        navigator.serviceWorker.register(swUrl, { scope: '/' })
+            .then(reg => {
+                // Wait for SW to be active then inject manifest
+                const doManifest = () => injectManifest();
+                if (reg.active) doManifest();
+                else {
+                    const sw = reg.installing || reg.waiting;
+                    if (sw) sw.addEventListener('statechange', e => { if (e.target.state === 'activated') doManifest(); });
+                    // Fallback
+                    setTimeout(doManifest, 1500);
+                }
+            }).catch(() => injectManifest());
+    } else {
+        injectManifest();
     }
 
-    // 3. Catch install prompt — trigger it immediately
+    function injectManifest() {
+        const manifest = {
+            name: "CodeStudio IDE",
+            short_name: "CodeStudio",
+            description: "A powerful in-browser code editor",
+            start_url: location.href,
+            scope: location.pathname || '/',
+            display: "standalone",
+            background_color: "#0f0f13",
+            theme_color: "#0f0f13",
+            orientation: "landscape",
+            icons: [
+                { src: "/pwa-icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+                { src: "/pwa-icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+            ]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        document.getElementById('pwaManifest').setAttribute('href', URL.createObjectURL(blob));
+    }
+
+    // 3. Store install prompt — don't auto-trigger, let user click
     window.addEventListener('beforeinstallprompt', e => {
-        e.prompt();
+        e.preventDefault();
+        window._pwaInstallPrompt = e;
+        const btn = document.getElementById('pwaInstallBtn');
+        if (btn) btn.style.display = 'flex';
     });
 })();
 
@@ -16777,10 +16845,6 @@ var _markedPatchInterval = setInterval(function() {
     return result;
   };
 }, 300);
-
-// ── Detect & execute actions from bot replies ─────────────────
-// Actions are now executed directly from raw fullText in groqChatSend,
-// before marked.parse strips the action tags. No DOM polling needed.
 
 })();
 </script>
