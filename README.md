@@ -87,7 +87,7 @@ CodeStudio IDE is a fully-featured web development environment built entirely as
 - **Persistent Themes** — Your theme is saved and restored automatically
 
 ### 🤖 AI Tools
-- **AI Code Analysis** — Powered by Claude AI to review and suggest improvements
+- **AI Code Analysis** — Powered by Qroq AI to review and suggest improvements
 - **Smart Snippets** — Quick-insert common HTML, CSS, and JS patterns
 - **Libraries Panel** — One-click CDN library injection (Bootstrap, Tailwind, React, Vue, etc.)
 
