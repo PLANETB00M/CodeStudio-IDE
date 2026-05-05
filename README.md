@@ -3,13 +3,13 @@
 <div align="center">
 
 ![CodeStudio IDE](https://img.shields.io/badge/CodeStudio-IDE-6366f1?style=for-the-badge&logo=visualstudiocode&logoColor=white)
-![Version](https://img.shields.io/badge/Version-1.0-success?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-956.28.1-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![Single File](https://img.shields.io/badge/Single-HTML%20File-orange?style=for-the-badge)
 
 **A powerful, all-in-one browser-based IDE with real-time collaboration — no installation required.**
 
-[🚀 Live Demo](https://asser20102040-png.github.io/CodeStudio-IDE/CodeStudio_IDE.html) · [📖 Documentation](#features) · [🐛 Report Bug](https://github.com/asser20102040-png/CodeStudio-IDE/issues)
+[🚀 Live Demo](https://planetb00m.github.io/CodeStudio-IDE/CodeStudio_IDE.html) · [📖 Documentation](#features) · [🐛 Report Bug](https://github.com/asser20102040-png/CodeStudio-IDE/issues)
 
 </div>
 
@@ -200,7 +200,7 @@ https://asser20102040-png.github.io/CodeStudio-IDE/CodeStudio_IDE.html
 ## 📄 License
 
 ```
-Copyright (c) 2025 asser20102040. All Rights Reserved.
+Copyright (c) 2025 planetb00m. All Rights Reserved.
 
 This software and its source code are proprietary and confidential.
 Unauthorized copying, distribution, modification, or use of this 
