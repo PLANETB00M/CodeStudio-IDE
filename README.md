@@ -120,7 +120,7 @@ CodeStudio IDE is a fully-featured web development environment built entirely as
 | **Firebase Auth** | Google Sign-In |
 | **Firebase Realtime DB** | Public room discovery |
 | **Google Drive API** | Cloud project storage |
-| **Claude AI API** | AI code analysis |
+| **Groq AI API** | AI code analysis |
 
 ---
 
@@ -129,7 +129,7 @@ CodeStudio IDE is a fully-featured web development environment built entirely as
 ### Option 1 — Use Online
 Visit the live demo directly:
 ```
-https://asser20102040-png.github.io/CodeStudio-IDE/CodeStudio_IDE.html
+https://planetb00m.github.io/CodeStudio-IDE/CodeStudio_IDE.html
 ```
 
 ### Option 2 — Run Locally
@@ -212,7 +212,7 @@ prior written permission from the author.
 
 <div align="center">
 
-Made with ❤️ by **asser20102040**
+Made with ❤️ by **planetb00m**
 
 ⭐ Star this repo if you find it useful!
 
