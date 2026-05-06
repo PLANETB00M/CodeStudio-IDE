@@ -8646,28 +8646,35 @@
 
             if (accepted) {
                 collabConnections.push(conn);
+                // Tag connection immediately so the data handler gate passes
+                conn._collabUser = user;
                 // Add host to collabUsers if not already there
                 if (!collabUsers.includes(myCollabName)) collabUsers.unshift(myCollabName);
-                // Optimistically add the joining user to the list so they see themselves immediately.
-                // If they were already added via 'join' message, push is idempotent via the includes check.
-                const joiningUserOptimistic = user;
-                const usersWithJoiner = collabUsers.includes(joiningUserOptimistic)
-                    ? collabUsers
-                    : [...collabUsers, joiningUserOptimistic];
-                // Send approval + immediately sync current user list & pfps so joiner sees host right away
+                // Add joiner to collabUsers NOW (not just a copy) so host UI shows correct count
+                if (!collabUsers.includes(user)) collabUsers.push(user);
+                // Track their pfp if provided
+                if (pfp) collabPfps[user] = pfp;
+                // Ensure leaderboard slot
+                if (!collabCodeStats[user]) collabCodeStats[user] = 0;
+                // Ensure perms
+                ensureUserPerms(user);
+                // Render host UI immediately with updated count
+                renderCollabUsers();
+                renderLeaderboard();
+                // Send approval + full state so joiner sees everyone right away
                 conn.send({ type: 'join_approved', roomId: collabRoom });
-                conn.send({ type: 'sync_users', users: usersWithJoiner });
+                conn.send({ type: 'sync_users', users: collabUsers });
                 conn.send({ type: 'sync_pfps', pfps: collabPfps });
-                appendChat('__SYS_DOOR__', `Join request from ${user} approved — waiting for them to connect.`);
-                // Update registry player count (collabUsers already includes host, +1 for the joiner)
+                broadcastPerms();
+                appendChat('__SYS_DOOR__', `${user} joined the room.`);
+                // Broadcast updated user list to all OTHER connections too
+                collabConnections.forEach(c => { if (c !== conn) { try { c.send({ type: 'sync_users', users: collabUsers }); } catch(e){} } });
+                // Update registry player count
                 if (collabRoom) {
-                    const pc = (collabUsers.length || 1) + 1;
-                    _updateRegistryPlayerCount(collabRoom, pc);
+                    _updateRegistryPlayerCount(collabRoom, collabUsers.length);
                 }
-                // Optimistically update the nav pill so host sees correct count immediately
+                // Update the nav pill
                 updateServerRoomDisplay && updateServerRoomDisplay();
-                // All state sync happens in handleCollabMessage when collaborator sends back 'join',
-                // ensuring their UI is fully ready before receiving code/project data.
             } else {
                 conn.send({ type: 'join_denied', reason: 'The host denied your request to join.' });
                 setTimeout(() => { try { conn.close(); } catch(e){} }, 500);
@@ -9113,7 +9120,25 @@
                 const conn = peer.connect(id);
                 // NOTE: do NOT push conn to collabConnections until host approves
 
-                conn.on('open', () => {
+                conn.on('open', async () => {
+                    // Make sure we have a real name before announcing ourselves —
+                    // wait up to 2s for the async IP fetch to complete
+                    if (myCollabName === 'Fetching IP…') {
+                        await new Promise(resolve => {
+                            const deadline = Date.now() + 2000;
+                            const check = () => {
+                                if (myCollabName !== 'Fetching IP…' || Date.now() >= deadline) {
+                                    if (myCollabName === 'Fetching IP…') {
+                                        myCollabName = 'Guest_' + Math.floor(Math.random()*9000+1000);
+                                    }
+                                    resolve();
+                                } else {
+                                    setTimeout(check, 100);
+                                }
+                            };
+                            check();
+                        });
+                    }
                     if (userData && userData.pfp) collabPfps[myCollabName] = userData.pfp;
                     // Send join_request instead of join immediately
                     conn.send({ type: 'join_request', user: myCollabName, pfp: (userData && userData.pfp) || null, password: window._pendingRoomPassword || '' });
@@ -9266,32 +9291,32 @@
         }
 
         async function handleCollabMessage(msg, senderConn) {
-            if(msg.type === 'join' && !collabUsers.includes(msg.user)) {
-                collabUsers.push(msg.user);
+            if(msg.type === 'join') {
+                // User may have already been added in respondJoinRequest — ensure they're in
+                if (!collabUsers.includes(msg.user)) collabUsers.push(msg.user);
                 if (msg.pfp) collabPfps[msg.user] = msg.pfp;
                 ensureUserPerms(msg.user);
                 if (!collabCodeStats[msg.user]) collabCodeStats[msg.user] = 0;
-                // Tag connection for disconnect identification
                 if (senderConn) senderConn._collabUser = msg.user;
                 renderCollabUsers();
                 renderLeaderboard();
                 if(isHost) {
-                    appendChat('__SYS_DOOR__', `${msg.user} joined the room.`);
-                    collabConnections.forEach(c => c.send({ type: 'sync_users', users: collabUsers }));
-                    collabConnections.forEach(c => c.send({ type: 'sync_pfps', pfps: collabPfps }));
+                    // Broadcast final state to everyone (including new joiner)
+                    collabConnections.forEach(c => { try { c.send({ type: 'sync_users', users: collabUsers }); } catch(e){} });
+                    collabConnections.forEach(c => { try { c.send({ type: 'sync_pfps', pfps: collabPfps }); } catch(e){} });
                     broadcastPerms();
-                    broadcastProjectSync();
                     // Send current code to the newly joined collaborator now that their UI is ready
                     if (senderConn) {
                         try { senderConn.send({ type: 'code_update', ext: activeExt, code: input.value, user: myCollabName }); } catch(e) {}
                     }
+                    broadcastProjectSync();
                     // Send current whiteboard state so new joiner sees it immediately
                     if (wbStrokes.length > 0) broadcastWbFullState();
                     if (followMeActive) {
                         const fmMsg = { type: 'follow_me_state', active: true, hostName: myCollabName };
                         collabConnections.forEach(c => { try { c.send(fmMsg); } catch(e){} });
                     }
-                    // Broadcast leaderboard state — ensure host is always included
+                    // Broadcast leaderboard state
                     if (!collabCodeStats[myCollabName]) collabCodeStats[myCollabName] = 0;
                     collabConnections.forEach(c => { try { c.send({ type: 'sync_lb', stats: collabCodeStats }); } catch(e){} });
                 }
