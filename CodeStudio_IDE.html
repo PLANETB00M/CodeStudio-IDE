@@ -3937,7 +3937,7 @@
                 </div>
 
                 <!-- Google Drive Card -->
-                <div class="auth-method-card" id="methodGoogleCard" onclick="switchAuthMethod('google')">
+                <div class="auth-method-card" id="methodGoogleCard" onclick="handleFirebaseGoogleSignIn()" style="border:1.5px solid rgba(66,133,244,0.25);background:linear-gradient(135deg,rgba(66,133,244,0.05),rgba(234,67,53,0.03));">
                     <div class="auth-method-icon" style="background:#fff;">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78" width="22" height="22">
                             <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
@@ -3950,9 +3950,9 @@
                     </div>
                     <div style="flex:1;">
                         <div style="font-size:13px; font-weight:800; color:var(--text);">Google Drive Sync</div>
-                        <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">OAuth 2.0 · Save projects to your Drive</div>
+                        <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">Sign in with Google · Save projects to your Drive</div>
                     </div>
-                    <i class="fas fa-chevron-right" style="color:var(--text-dim); font-size:12px;"></i>
+                    <i class="fas fa-arrow-right" style="color:#4285f4; font-size:12px;"></i>
                 </div>
 
                 <!-- CodeStudio Local Card -->
