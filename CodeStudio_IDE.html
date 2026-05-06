@@ -8574,6 +8574,9 @@
             lb.innerHTML = '';
             if (sorted.length === 0) {
                 lb.innerHTML = '<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:8px;">Start coding to see the leaderboard!</div>';
+                // ── FIX BUG 3 (leaderboard): sync sidebar even for the empty state ──
+                const _sLB0 = document.getElementById('sideLeaderboardList');
+                if (_sLB0) _sLB0.innerHTML = lb.innerHTML;
                 return;
             }
             const rankIcons = ['<i class="fas fa-medal" style="color:#ffd700;"></i>','<i class="fas fa-medal" style="color:#c0c0c0;"></i>','<i class="fas fa-medal" style="color:#cd7f32;"></i>'];
@@ -8596,6 +8599,11 @@
                         <div class="lb-chars">${label} chars</div>
                     </div>`;
             });
+            // ── FIX BUG 3 (leaderboard): mirror to sidebar leaderboard on every render.
+            // Previously only syncSideCollabUI() (called once at join) copied the leaderboard,
+            // so joining users never appeared in the sidebar leaderboard. ──
+            const _sLB = document.getElementById('sideLeaderboardList');
+            if (_sLB) _sLB.innerHTML = lb.innerHTML;
         }
 
         function trackCodeContribution(user, newCode, oldCode) {
@@ -10053,6 +10061,12 @@
             });
             // Also refresh DM user list whenever participants change
             renderDmUserList();
+            // ── FIX BUG 3: Sync sidebar users list so it always matches the main modal.
+            // renderCollabUsers() is called on every join/leave/sync, but the sidebar
+            // sideCollabUsersList was only copied once at initCollabUI (via syncSideCollabUI).
+            // Without this, the sidebar shows a stale 1-person list even when 2 are present. ──
+            const _sideUsersList = document.getElementById('sideCollabUsersList');
+            if (_sideUsersList) _sideUsersList.innerHTML = ui.innerHTML;
         }
 
         // Live Chat Logic
@@ -10724,6 +10738,18 @@
                 // Guard: ignore if we already have an established connection to this peer
                 if (huddleCalls[call.peer]) { call.close(); return; }
 
+                // ── FIX BUG 4: Extract caller's display name from their peer ID and add to
+                // huddleUserSet immediately. The huddle_join relay message may arrive AFTER
+                // the WebRTC call (two hops: caller→host→us vs direct P2P call), so waiting
+                // for the relay would leave the count stale until it arrives. ──
+                const _callerParts = call.peer.split('_');
+                const _callerName  = _callerParts.length > 3
+                    ? _callerParts.slice(2, -1).join('_')
+                    : (_callerParts[2] || call.peer);
+                if (_callerName && !huddleUserSet.has(_callerName)) {
+                    huddleUserSet.add(_callerName);
+                }
+
                 // Answer with our stream. If the caller has video but we joined audio-only,
                 // WebRTC still needs us to answer — the remote stream will arrive regardless.
                 call.answer(huddleStream);
@@ -10924,6 +10950,21 @@
                     lbl.className = 'huddle-video-label';
                     lbl.textContent = userName;
                     tile.appendChild(lbl);
+                }
+                // ── FIX BUG 1: Always attach a hidden <audio> element so voice-only streams play ──
+                // Without this, audio tracks in the stream are never connected to a playback device.
+                let _audioEl = tile.querySelector('audio.huddle-remote-audio');
+                if (!_audioEl) {
+                    _audioEl = document.createElement('audio');
+                    _audioEl.className = 'huddle-remote-audio';
+                    _audioEl.autoplay = true;
+                    _audioEl.playsInline = true;
+                    _audioEl.style.display = 'none';
+                    tile.appendChild(_audioEl);
+                }
+                if (stream && _audioEl.srcObject !== stream) {
+                    _audioEl.srcObject = stream;
+                    _audioEl.play().catch(() => {});
                 }
                 // Keep polling: if a video track becomes live later, re-render
                 if (stream) {
@@ -13496,12 +13537,24 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
                 applyUserUI();
 
                 // Save user presence to Firebase DB
-                window._fbDB.ref('users/' + fbUser.uid).set({
+                // ── FIX BUG 2: Use ServerValue.TIMESTAMP (authoritative server clock) instead
+                // of Date.now() (client clock, which can be wrong or stale). Also refresh
+                // lastSeen every 5 minutes so it reflects actual activity, not just login time. ──
+                const _presenceRef = window._fbDB.ref('users/' + fbUser.uid);
+                _presenceRef.set({
                     name:    fbUser.name,
                     email:   fbUser.email,
                     pfp:     fbUser.pfp || null,
-                    lastSeen: Date.now()
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP
                 });
+                // Periodic lastSeen refresh while user is active
+                if (window._lastSeenInterval) clearInterval(window._lastSeenInterval);
+                window._lastSeenInterval = setInterval(() => {
+                    if (window._fbDB && fbUser.uid) {
+                        window._fbDB.ref('users/' + fbUser.uid + '/lastSeen')
+                            .set(firebase.database.ServerValue.TIMESTAMP);
+                    }
+                }, 5 * 60 * 1000); // update every 5 minutes
 
                 setTimeout(() => {
                     const o = document.getElementById('authOverlay');
