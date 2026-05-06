@@ -1,4 +1,4 @@
-=<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8646,7 +8646,12 @@
 
             if (accepted) {
                 collabConnections.push(conn);
+                // Add host to collabUsers if not already there
+                if (!collabUsers.includes(myCollabName)) collabUsers.unshift(myCollabName);
+                // Send approval + immediately sync current user list & pfps so joiner sees host right away
                 conn.send({ type: 'join_approved', roomId: collabRoom });
+                conn.send({ type: 'sync_users', users: collabUsers });
+                conn.send({ type: 'sync_pfps', pfps: collabPfps });
                 appendChat('__SYS_DOOR__', `Join request from ${user} approved — waiting for them to connect.`);
                 // Update registry player count (collabUsers already includes host, +1 for the joiner)
                 if (collabRoom) {
