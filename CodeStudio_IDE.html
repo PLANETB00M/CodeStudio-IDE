@@ -3937,7 +3937,7 @@
                 </div>
 
                 <!-- Google Drive Card -->
-                <div class="auth-method-card" id="methodGoogleCard" onclick="handleFirebaseGoogleSignIn()" style="border:1.5px solid rgba(66,133,244,0.25);background:linear-gradient(135deg,rgba(66,133,244,0.05),rgba(234,67,53,0.03));">
+                <div class="auth-method-card" id="methodGoogleCard" onclick="switchAuthMethod('google')">
                     <div class="auth-method-icon" style="background:#fff;">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78" width="22" height="22">
                             <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
@@ -3950,9 +3950,9 @@
                     </div>
                     <div style="flex:1;">
                         <div style="font-size:13px; font-weight:800; color:var(--text);">Google Drive Sync</div>
-                        <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">Sign in with Google · Save projects to your Drive</div>
+                        <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">OAuth 2.0 · Save projects to your Drive</div>
                     </div>
-                    <i class="fas fa-arrow-right" style="color:#4285f4; font-size:12px;"></i>
+                    <i class="fas fa-chevron-right" style="color:var(--text-dim); font-size:12px;"></i>
                 </div>
 
                 <!-- CodeStudio Local Card -->
@@ -13573,7 +13573,9 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
             // Account type badge
             const typeEl = document.getElementById('profileAccountType');
             if (typeEl) {
-                if (userData.authType === 'gdrive' || userData.authType === 'firebase') {
+                if (userData.authType === 'firebase') {
+                    typeEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--text);"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='14' height='14'><path fill='#FFC107' d='M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z'/><path fill='#FF3D00' d='M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z'/><path fill='#4CAF50' d='M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z'/><path fill='#1976D2' d='M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z'/></svg> Google Account</span>`;
+                } else if (userData.authType === 'gdrive') {
                     typeEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--text);"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 87.3 78' width='14' height='14'><path d='m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z' fill='#0066da'/><path d='m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z' fill='#00ac47'/><path d='m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z' fill='#ea4335'/><path d='m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z' fill='#00832d'/><path d='m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z' fill='#2684fc'/><path d='m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z' fill='#ffba00'/></svg> Google Drive Account</span>`;
                 } else {
                     typeEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(99,102,241,0.12));border:1px solid rgba(59,130,246,0.25);color:var(--accent);"><i class="fas fa-layer-group"></i> CodeStudio Account</span>`;
