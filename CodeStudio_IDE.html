@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+=<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13604,9 +13604,9 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
                 // gdrive users don't use backup tokens — hide that button
                 if (copyTokenBtn) copyTokenBtn.style.display = 'none';
                 if (tokenHint)    tokenHint.style.display    = 'none';
-                // Show Drive push/load panel
+                // Show Drive push/load panel only for gdrive (firebase handles auth automatically)
                 const drivePanel = document.getElementById('driveActionsPanel');
-                if (drivePanel) drivePanel.style.display = '';
+                if (drivePanel) drivePanel.style.display = userData.authType === 'gdrive' ? '' : 'none';
             } else {
                 if (syncEl) syncEl.textContent = binId ? `<i class="fas fa-cloud"></i> Saved locally · last saved ${savedAt}` : '<i class="fas fa-triangle-exclamation"></i> Not yet saved';
                 if (copyTokenBtn) copyTokenBtn.style.display = '';
