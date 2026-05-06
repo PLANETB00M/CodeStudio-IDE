@@ -8648,9 +8648,15 @@
                 collabConnections.push(conn);
                 // Add host to collabUsers if not already there
                 if (!collabUsers.includes(myCollabName)) collabUsers.unshift(myCollabName);
+                // Optimistically add the joining user to the list so they see themselves immediately.
+                // If they were already added via 'join' message, push is idempotent via the includes check.
+                const joiningUserOptimistic = user;
+                const usersWithJoiner = collabUsers.includes(joiningUserOptimistic)
+                    ? collabUsers
+                    : [...collabUsers, joiningUserOptimistic];
                 // Send approval + immediately sync current user list & pfps so joiner sees host right away
                 conn.send({ type: 'join_approved', roomId: collabRoom });
-                conn.send({ type: 'sync_users', users: collabUsers });
+                conn.send({ type: 'sync_users', users: usersWithJoiner });
                 conn.send({ type: 'sync_pfps', pfps: collabPfps });
                 appendChat('__SYS_DOOR__', `Join request from ${user} approved — waiting for them to connect.`);
                 // Update registry player count (collabUsers already includes host, +1 for the joiner)
@@ -9291,7 +9297,13 @@
                 }
             } 
             else if (msg.type === 'sync_users') {
-                collabUsers = msg.users; 
+                collabUsers = msg.users;
+                // Always make sure our own name is in the list —
+                // the host may send sync_users before it has processed our 'join' message,
+                // which would leave us invisible in the room.
+                if (myCollabName && !collabUsers.includes(myCollabName)) {
+                    collabUsers.push(myCollabName);
+                }
                 // Ensure leaderboard has entries for all users
                 collabUsers.forEach(u => { if (!collabCodeStats[u]) collabCodeStats[u] = 0; });
                 renderCollabUsers(); 
@@ -13594,7 +13606,11 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
             _updateStatWordsDisplay();
             _flushSessionTime();
             _updateStatTimeDisplay();
-            const binId   = localStorage.getItem('cs_user_hash');
+            // For firebase/gdrive users, binId is stored under a different key — check both
+            const binId   = localStorage.getItem('cs_user_hash') ||
+                            (userData.authType === 'firebase' ? ('fb_' + userData.firebaseUid) : null) ||
+                            (userData.authType === 'gdrive'   ? ('gdrive_' + (userData.googleSub || '')) : null) ||
+                            null;
             const savedAt = userData.savedAt ? new Date(userData.savedAt).toLocaleTimeString() : '—';
             const syncEl  = document.getElementById('profileSyncStatus');
             // Show correct sync status per account type
@@ -13602,9 +13618,18 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
             const tokenHint    = copyTokenBtn && copyTokenBtn.nextElementSibling;
             if (userData.authType === 'gdrive' || userData.authType === 'firebase') {
                 if (syncEl) {
-                    syncEl.innerHTML = binId
-                        ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 87.3 78' width='11' height='11' style='vertical-align:middle;margin-right:4px;'><path d='m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z' fill='#0066da'/><path d='m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z' fill='#00ac47'/><path d='m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z' fill='#ea4335'/><path d='m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z' fill='#00832d'/><path d='m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z' fill='#2684fc'/><path d='m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z' fill='#ffba00'/></svg> Synced to Google Drive · last saved ${savedAt}`
-                        : '<i class="fas fa-triangle-exclamation"></i> Not yet synced';
+                    const isSynced = userData.savedAt != null;
+                    if (userData.authType === 'firebase') {
+                        // Firebase = Google Account sync (not Drive)
+                        syncEl.innerHTML = isSynced
+                            ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='11' height='11' style='vertical-align:middle;margin-right:4px;'><path fill='#FFC107' d='M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z'/><path fill='#FF3D00' d='M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z'/><path fill='#4CAF50' d='M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z'/><path fill='#1976D2' d='M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z'/></svg> Synced with Google Account · last saved ${savedAt}`
+                            : '<i class="fas fa-triangle-exclamation"></i> Not yet synced';
+                    } else {
+                        // gdrive = Google Drive sync
+                        syncEl.innerHTML = isSynced
+                            ? `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 87.3 78' width='11' height='11' style='vertical-align:middle;margin-right:4px;'><path d='m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z' fill='#0066da'/><path d='m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z' fill='#00ac47'/><path d='m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z' fill='#ea4335'/><path d='m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z' fill='#00832d'/><path d='m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z' fill='#2684fc'/><path d='m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z' fill='#ffba00'/></svg> Synced to Google Drive · last saved ${savedAt}`
+                            : '<i class="fas fa-triangle-exclamation"></i> Not yet synced';
+                    }
                 }
                 // gdrive users don't use backup tokens — hide that button
                 if (copyTokenBtn) copyTokenBtn.style.display = 'none';
