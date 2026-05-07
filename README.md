@@ -3,7 +3,7 @@
 <div align="center">
 
 ![CodeStudio IDE](https://img.shields.io/badge/CodeStudio-IDE-6366f1?style=for-the-badge&logo=visualstudiocode&logoColor=white)
-![Version](https://img.shields.io/badge/Version-956.28.1-success?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-989.34.6-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![Single File](https://img.shields.io/badge/Single-HTML%20File-orange?style=for-the-badge)
 
