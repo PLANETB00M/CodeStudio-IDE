@@ -4221,6 +4221,7 @@
             <button class="btn btn-refresh" onclick="forceRefresh()" title="Reload Preview Iframe"><i class="fas fa-rotate-right" id="refreshIcon"></i> Refresh</button>
             <button class="btn" id="manualSaveBtn" onclick="manualSave()" title="Save (Ctrl+S)" style="display:none;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.35);color:#f59e0b;font-weight:800;"><i class="fas fa-floppy-disk"></i> Save</button>
             <button class="btn" id="pwaInstallBtn" onclick="if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();window._pwaInstallPrompt.userChoice.then(()=>{window._pwaInstallPrompt=null;document.getElementById('pwaInstallBtn').style.display='none';});}" title="Install CodeStudio as an app" style="display:none;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);color:#818cf8;"><i class="fas fa-desktop"></i> Install App</button>
+
             <button class="btn btn-export" onclick="toggleExportModal()"><i class="fas fa-download"></i> Export</button>
             <button class="btn" style="background: var(--accent-glow); border: 1px solid var(--border); color:var(--text);" onclick="document.getElementById('fileIn').click()"><i class="fas fa-upload"></i> Import</button>
             <input type="file" id="fileIn" style="display:none;" onchange="handleImport(event)">
@@ -4262,6 +4263,7 @@
             <div class="activity-icon" id="actTools" onclick="switchSidebarTab('tools')" title="Dev Tools"><i class="fas fa-screwdriver-wrench"></i></div>
             <div class="activity-icon" id="actLibraries" onclick="switchSidebarTab('libraries')" title="Libraries"><i class="fas fa-box-open"></i></div>
             <div class="activity-icon" id="actGroqAI" onclick="switchSidebarTab('groqai')" title="Groq AI — Analyze Code"><i class="fas fa-robot"></i></div>
+            <div class="activity-icon" id="actHub" onclick="openHub()" title="CodeHub — Browse &amp; Share Projects" style="position:relative;"><i class="fas fa-rocket"></i><span id="hubNavBadge" style="position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent);border-radius:50%;display:none;"></span></div>
             <div id="syncDisplay" onclick="toggleAuthModal()" title="Account" style="width:100%; height:50px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; margin-top:auto;">
                 <div class="user-pill-avatar" id="navAvatarPill" style="background:transparent; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; color:var(--text-dim); flex-shrink:0; overflow:hidden; transition:0.2s;"><i class="fas fa-circle-user"></i></div>
                 <span id="navUserLabel" style="display:none;"></span>
@@ -16961,6 +16963,1384 @@ var _markedPatchInterval = setInterval(function() {
 // ── Detect & execute actions from bot replies ─────────────────
 // Actions are now executed directly from raw fullText in groqChatSend,
 // before marked.parse strips the action tags. No DOM polling needed.
+
+})();
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CODEHUB — Community Project Gallery
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<style>
+/* ── Hub Overlay ── */
+#hubOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  background: var(--bg, #0f0f13);
+  flex-direction: column;
+  overflow: hidden;
+}
+#hubOverlay.hub-open { display: flex; }
+
+/* ── Hub Topbar ── */
+.hub-topbar {
+  height: 56px;
+  flex-shrink: 0;
+  background: var(--toolbar, #18181b);
+  border-bottom: 1px solid var(--border, #27272a);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 14px;
+  position: relative;
+}
+.hub-topbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--accent), #ef4444, var(--accent), transparent);
+  background-size: 200% 200%;
+  animation: hubGradient 4s ease infinite;
+}
+@keyframes hubGradient { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+.hub-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text, #e4e4e7);
+  letter-spacing: -0.5px;
+}
+.hub-brand-icon {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent), #ef4444);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: #fff;
+  box-shadow: 0 0 14px rgba(var(--accent-rgb),0.4);
+}
+.hub-brand span { color: var(--accent); }
+
+.hub-search-wrap {
+  flex: 1;
+  max-width: 420px;
+  position: relative;
+}
+.hub-search-wrap i {
+  position: absolute;
+  left: 11px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--text-dim, #52525b);
+  pointer-events: none;
+}
+.hub-search {
+  width: 100%;
+  background: var(--bg, #0f0f13);
+  border: 1px solid var(--border, #27272a);
+  color: var(--text, #e4e4e7);
+  padding: 8px 12px 8px 32px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-family: 'Outfit', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.hub-search:focus { border-color: var(--accent); }
+.hub-search::placeholder { color: var(--text-dim, #52525b); }
+
+.hub-topbar-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+.hub-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--border, #27272a);
+  background: var(--toolbar, #18181b);
+  color: var(--text, #e4e4e7);
+  font-size: 12px; font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.hub-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb),0.08); }
+.hub-btn-primary {
+  background: linear-gradient(135deg, var(--accent), #ef4444) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb),0.35);
+}
+.hub-btn-primary:hover { box-shadow: 0 6px 20px rgba(var(--accent-rgb),0.55); color: #fff !important; }
+.hub-close-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #27272a);
+  background: var(--toolbar, #18181b);
+  color: var(--text-dim, #52525b);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.hub-close-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.1); }
+
+/* ── Hub Filters ── */
+.hub-filters {
+  height: 44px;
+  flex-shrink: 0;
+  background: var(--sidebar, #18181b);
+  border-bottom: 1px solid var(--border, #27272a);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 6px;
+  overflow-x: auto;
+}
+.hub-filter-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border, #27272a);
+  background: transparent;
+  color: var(--text-dim, #52525b);
+  font-size: 11px; font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.hub-filter-btn:hover { border-color: rgba(249,115,22,0.5); color: var(--accent); }
+.hub-filter-btn.active {
+  background: rgba(var(--accent-rgb),0.12);
+  border-color: rgba(249,115,22,0.5);
+  color: var(--accent);
+}
+.hub-tag-filter {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border, #27272a);
+  background: transparent;
+  color: var(--text-dim, #52525b);
+  font-size: 10px; font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.hub-tag-filter:hover { border-color: rgba(99,102,241,0.5); color: #818cf8; }
+.hub-tag-filter.active {
+  background: rgba(99,102,241,0.12);
+  border-color: rgba(99,102,241,0.4);
+  color: #818cf8;
+}
+
+/* ── Hub Body ── */
+.hub-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Featured Banner ── */
+.hub-featured {
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12), rgba(239,68,68,0.08), rgba(99,102,241,0.08));
+  border: 1px solid rgba(var(--accent-rgb),0.25);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hub-featured::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--accent-rgb),0.15), transparent 70%);
+}
+.hub-featured-badge {
+  background: linear-gradient(135deg, var(--accent), #ef4444);
+  color: #fff;
+  font-size: 9px; font-weight: 900;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.hub-featured-preview {
+  width: 120px; height: 72px;
+  border-radius: 10px;
+  background: var(--editor-bg, #0d0d10);
+  border: 1px solid var(--border, #27272a);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+/* ── Section Header ── */
+.hub-section-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.hub-section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text, #e4e4e7);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hub-section-title i { color: var(--accent); }
+.hub-see-all {
+  font-size: 11px; font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  background: none; border: none;
+  font-family: 'Outfit', sans-serif;
+}
+.hub-see-all:hover { opacity: 1; }
+
+/* ── Project Grid ── */
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* ── Project Card ── */
+.hub-card {
+  background: var(--toolbar, #18181b);
+  border: 1px solid var(--border, #27272a);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+  position: relative;
+}
+.hub-card:hover {
+  border-color: rgba(var(--accent-rgb),0.45);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(var(--accent-rgb),0.15);
+}
+.hub-card-preview {
+  height: 140px;
+  background: var(--editor-bg, #0d0d10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.hub-card-preview iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  pointer-events: none;
+  transform-origin: top left;
+}
+.hub-card-preview-overlay {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+}
+.hub-card-lang-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 9px; font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
+}
+.hub-card-body {
+  padding: 14px;
+}
+.hub-card-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text, #e4e4e7);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-card-desc {
+  font-size: 11px;
+  color: var(--text-dim, #52525b);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hub-card-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.hub-card-tag {
+  font-size: 9px; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.25);
+  color: #818cf8;
+  letter-spacing: 0.3px;
+}
+.hub-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border, #27272a);
+}
+.hub-card-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.hub-card-avatar {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+}
+.hub-card-author-name {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-dim, #52525b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.hub-stat {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--text-dim, #52525b);
+  font-weight: 600;
+}
+.hub-stat i { font-size: 9px; }
+.hub-stat.stars { color: #f59e0b; }
+.hub-stat.downloads { color: #10b981; }
+
+/* ── Hub Project Detail Modal ── */
+#hubDetailOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99995;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  align-items: center;
+  justify-content: center;
+}
+#hubDetailOverlay.hub-detail-open { display: flex; }
+.hub-detail-card {
+  background: var(--toolbar, #18181b);
+  border: 1px solid var(--border, #27272a);
+  border-radius: 20px;
+  width: min(900px, 95vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+  animation: hubDetailIn 0.35s cubic-bezier(0.34,1.4,0.64,1) both;
+}
+@keyframes hubDetailIn {
+  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.hub-detail-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border, #27272a);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.hub-detail-preview {
+  width: 100%;
+  height: 240px;
+  background: var(--editor-bg, #0d0d10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border, #27272a);
+}
+.hub-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.hub-detail-footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--border, #27272a);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.hub-rating-stars {
+  display: flex;
+  gap: 3px;
+}
+.hub-rating-star {
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--border, #27272a);
+  transition: color 0.15s;
+}
+.hub-rating-star.filled { color: #f59e0b; }
+.hub-rating-star:hover { color: #fbbf24; transform: scale(1.2); }
+
+/* ── Comments Section ── */
+.hub-comment {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, #27272a);
+  animation: hubCommentIn 0.25s ease both;
+}
+@keyframes hubCommentIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.hub-comment:last-child { border-bottom: none; }
+.hub-comment-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900;
+  color: #fff;
+}
+.hub-comment-body { flex: 1; }
+.hub-comment-meta {
+  font-size: 10px;
+  color: var(--text-dim, #52525b);
+  margin-bottom: 4px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.hub-comment-author { font-weight: 800; color: var(--text, #e4e4e7); }
+.hub-comment-text {
+  font-size: 12px;
+  color: var(--text, #e4e4e7);
+  line-height: 1.55;
+}
+
+/* ── Publish Modal ── */
+#hubPublishOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99996;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+}
+#hubPublishOverlay.open { display: flex; }
+.hub-publish-card {
+  background: var(--toolbar, #18181b);
+  border: 1px solid var(--border, #27272a);
+  border-radius: 20px;
+  width: min(520px, 95vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 0;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+  animation: hubDetailIn 0.35s cubic-bezier(0.34,1.4,0.64,1) both;
+}
+
+/* Toast notification */
+.hub-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--sidebar, #18181b);
+  border: 1px solid var(--border, #27272a);
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text, #e4e4e7);
+  font-family: 'Outfit', sans-serif;
+  z-index: 999999;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.35s cubic-bezier(0.34,1.4,0.64,1), opacity 0.3s;
+  opacity: 0;
+  pointer-events: none;
+}
+.hub-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.hub-toast.success i { color: #10b981; }
+.hub-toast.error i { color: #ef4444; }
+
+/* ── Scrollbar ── */
+.hub-body::-webkit-scrollbar,
+.hub-detail-body::-webkit-scrollbar { width: 5px; }
+.hub-body::-webkit-scrollbar-track,
+.hub-detail-body::-webkit-scrollbar-track { background: transparent; }
+.hub-body::-webkit-scrollbar-thumb,
+.hub-detail-body::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb),0.25); border-radius: 4px; }
+
+/* ── Empty state ── */
+.hub-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim, #52525b);
+}
+.hub-empty i { font-size: 40px; margin-bottom: 14px; opacity: 0.3; }
+.hub-empty h3 { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: var(--text, #e4e4e7); margin: 0 0 6px; }
+
+/* Tag color map */
+.tag-html { background: rgba(228,77,38,0.12); border-color: rgba(228,77,38,0.3); color: var(--accent); }
+.tag-css  { background: rgba(38,77,228,0.12); border-color: rgba(38,77,228,0.3); color: #60a5fa; }
+.tag-js   { background: rgba(247,223,30,0.1); border-color: rgba(247,223,30,0.3); color: #fbbf24; }
+.tag-game { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #a78bfa; }
+.tag-animation { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #34d399; }
+.tag-tool { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.3); color: #60a5fa; }
+.tag-art  { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.3); color: #f472b6; }
+.tag-3d   { background: rgba(251,146,60,0.12); border-color: rgba(251,146,60,0.3); color: #fb923c; }
+</style>
+
+<!-- ══ HUB OVERLAY ══ -->
+<div id="hubOverlay">
+
+  <!-- Top Bar -->
+  <div class="hub-topbar">
+    <div class="hub-brand">
+      <div class="hub-brand-icon"><i class="fas fa-rocket"></i></div>
+      Code<span>Hub</span>
+    </div>
+    <div class="hub-search-wrap">
+      <i class="fas fa-search"></i>
+      <input class="hub-search" id="hubSearchInput" placeholder="Search projects, authors, tags…" oninput="hubFilterProjects()">
+    </div>
+    <div class="hub-topbar-actions">
+      <button class="hub-btn hub-btn-primary" onclick="openHubPublish()"><i class="fas fa-upload"></i> Publish Project</button>
+      <button class="hub-close-btn" onclick="closeHub()" title="Back to IDE"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="hub-filters">
+    <button class="hub-filter-btn active" id="hfilt-trending" onclick="hubSetSort('trending')"><i class="fas fa-fire"></i> Trending</button>
+    <button class="hub-filter-btn" id="hfilt-new" onclick="hubSetSort('new')"><i class="fas fa-bolt"></i> New</button>
+    <button class="hub-filter-btn" id="hfilt-top" onclick="hubSetSort('top')"><i class="fas fa-trophy"></i> Top Rated</button>
+    <button class="hub-filter-btn" id="hfilt-most-downloaded" onclick="hubSetSort('most-downloaded')"><i class="fas fa-download"></i> Most Downloaded</button>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 4px;flex-shrink:0;"></div>
+    <button class="hub-tag-filter" id="htag-all" onclick="hubSetTag('all')">All</button>
+    <button class="hub-tag-filter" id="htag-game" onclick="hubSetTag('game')"><i class="fas fa-gamepad"></i> Games</button>
+    <button class="hub-tag-filter" id="htag-animation" onclick="hubSetTag('animation')"><i class="fas fa-film"></i> Animations</button>
+    <button class="hub-tag-filter" id="htag-tool" onclick="hubSetTag('tool')"><i class="fas fa-wrench"></i> Tools</button>
+    <button class="hub-tag-filter" id="htag-art" onclick="hubSetTag('art')"><i class="fas fa-palette"></i> Art</button>
+    <button class="hub-tag-filter" id="htag-3d" onclick="hubSetTag('3d')"><i class="fas fa-cube"></i> 3D</button>
+  </div>
+
+  <!-- Body -->
+  <div class="hub-body" id="hubBody">
+    <!-- Featured -->
+    <div id="hubFeaturedSection"></div>
+
+    <!-- Grid -->
+    <div>
+      <div class="hub-section-hdr">
+        <div class="hub-section-title" id="hubSectionTitle"><i class="fas fa-fire"></i> Trending This Week</div>
+        <button class="hub-see-all" id="hubCountLabel">Loading…</button>
+      </div>
+      <div id="hubLoadingState" style="display:none;text-align:center;padding:60px 20px;">
+        <div style="width:32px;height:32px;border:3px solid rgba(var(--accent-rgb),0.15);border-top-color:var(--accent);border-radius:50%;animation:lsSpin 0.7s linear infinite;margin:0 auto 14px;"></div>
+        <div style="font-size:12px;color:var(--text-dim);font-family:'Outfit',sans-serif;">Loading projects…</div>
+      </div>
+      <div class="hub-grid" id="hubGrid"></div>
+      <div id="hubEmptyState" style="display:none;">
+        <div class="hub-empty">
+          <i class="fas fa-rocket"></i>
+          <h3 id="hubEmptyTitle">Be the first to publish!</h3>
+          <p id="hubEmptyMsg">No projects yet — open a project in the IDE and hit <strong>Publish Project</strong> to share it with the community</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ HUB DETAIL OVERLAY ══ -->
+<div id="hubDetailOverlay">
+  <div class="hub-detail-card">
+    <div class="hub-detail-header">
+      <div id="hubDetailAvatar" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div id="hubDetailTitle" style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:900;color:var(--text);"></div>
+        <div id="hubDetailMeta" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="hub-btn hub-btn-primary" id="hubOpenIdeBtn" onclick="hubOpenInIDE()"><i class="fas fa-code"></i> Open in IDE</button>
+        <button class="hub-close-btn" onclick="closeHubDetail()"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <div class="hub-detail-preview" id="hubDetailPreview"></div>
+    <div class="hub-detail-body">
+      <!-- Stats row -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:8px 14px;">
+          <i class="fas fa-star" style="color:#f59e0b;font-size:13px;"></i>
+          <span id="hubDetailStars" style="font-size:15px;font-weight:900;color:#f59e0b;"></span>
+          <span style="font-size:10px;color:var(--text-dim);">rating</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:8px 14px;">
+          <i class="fas fa-download" style="color:#10b981;font-size:13px;"></i>
+          <span id="hubDetailDownloads" style="font-size:15px;font-weight:900;color:#10b981;"></span>
+          <span style="font-size:10px;color:var(--text-dim);">downloads</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:8px 14px;">
+          <i class="fas fa-comment" style="color:#60a5fa;font-size:13px;"></i>
+          <span id="hubDetailCommentCount" style="font-size:15px;font-weight:900;color:#60a5fa;"></span>
+          <span style="font-size:10px;color:var(--text-dim);">comments</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:8px 14px;">
+          <i class="fas fa-heart" style="color:#a78bfa;font-size:13px;"></i>
+          <span id="hubDetailLikes" style="font-size:15px;font-weight:900;color:#a78bfa;"></span>
+          <span style="font-size:10px;color:var(--text-dim);">likes</span>
+        </div>
+      </div>
+      <!-- Description -->
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">About</div>
+        <div id="hubDetailDesc" style="font-size:12px;color:var(--text);line-height:1.7;"></div>
+      </div>
+      <!-- Tags -->
+      <div id="hubDetailTagsWrap">
+        <div style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Tags</div>
+        <div id="hubDetailTags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+      <!-- Rate this project -->
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Rate This Project</div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="hub-rating-stars" id="hubRatingStars">
+            <span class="hub-rating-star" onclick="hubRate(1)"><i class="fas fa-star"></i></span>
+            <span class="hub-rating-star" onclick="hubRate(2)"><i class="fas fa-star"></i></span>
+            <span class="hub-rating-star" onclick="hubRate(3)"><i class="fas fa-star"></i></span>
+            <span class="hub-rating-star" onclick="hubRate(4)"><i class="fas fa-star"></i></span>
+            <span class="hub-rating-star" onclick="hubRate(5)"><i class="fas fa-star"></i></span>
+          </div>
+          <span id="hubRatingMsg" style="font-size:11px;color:var(--text-dim);"></span>
+        </div>
+      </div>
+      <!-- Comments -->
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Comments</div>
+        <div id="hubCommentsList" style="margin-bottom:12px;"></div>
+        <!-- Add comment -->
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div id="hubCommentMyAvatar" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;">?</div>
+          <div style="flex:1;">
+            <textarea id="hubCommentInput" placeholder="Write a comment…" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:10px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;resize:none;line-height:1.55;transition:border-color 0.2s;box-sizing:border-box;" rows="2" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.ctrlKey&&event.key==='Enter')hubPostComment()"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+              <button class="hub-btn hub-btn-primary" onclick="hubPostComment()" style="padding:6px 14px;font-size:11px;"><i class="fas fa-paper-plane"></i> Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HUB PUBLISH OVERLAY ══ -->
+<div id="hubPublishOverlay">
+  <div class="hub-publish-card">
+    <div style="padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ef4444);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0;"><i class="fas fa-upload"></i></div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:800;color:var(--text);">Publish to CodeHub</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Share your project with the community</div>
+      </div>
+      <button class="hub-close-btn" onclick="closeHubPublish()"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+      <!-- Project selector -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Project</label>
+        <select id="hubPublishProject" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></select>
+      </div>
+      <!-- Title -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Title <span style="color:#ef4444;">*</span></label>
+        <input id="hubPublishTitle" type="text" placeholder="My Awesome Project" maxlength="60" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <!-- Description -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Description <span style="color:#ef4444;">*</span></label>
+        <textarea id="hubPublishDesc" placeholder="Describe what this project does…" rows="3" maxlength="300" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;resize:none;line-height:1.55;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <!-- Tags -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Tags</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="hubTagPicker">
+          <button class="hub-tag-filter" id="hpub-game"  onclick="hubTogglePublishTag('game')">Game</button>
+          <button class="hub-tag-filter" id="hpub-animation" onclick="hubTogglePublishTag('animation')">Animation</button>
+          <button class="hub-tag-filter" id="hpub-tool"  onclick="hubTogglePublishTag('tool')">🛠 Tool</button>
+          <button class="hub-tag-filter" id="hpub-art"   onclick="hubTogglePublishTag('art')"><i class="fas fa-palette"></i> Art</button>
+          <button class="hub-tag-filter" id="hpub-3d"    onclick="hubTogglePublishTag('3d')"><i class="fas fa-cube"></i> 3D</button>
+          <button class="hub-tag-filter" id="hpub-html"  onclick="hubTogglePublishTag('html')">HTML</button>
+          <button class="hub-tag-filter" id="hpub-css"   onclick="hubTogglePublishTag('css')">CSS</button>
+          <button class="hub-tag-filter" id="hpub-js"    onclick="hubTogglePublishTag('js')">JS</button>
+        </div>
+      </div>
+      <!-- Author name -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Your Name</label>
+        <input id="hubPublishAuthor" type="text" placeholder="Anonymous" maxlength="30" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <button class="hub-btn hub-btn-primary" onclick="hubPublishProject()" style="justify-content:center;padding:12px;font-size:13px;">
+        <i class="fas fa-rocket"></i> Publish to Hub
+      </button>
+      <p style="font-size:10px;color:var(--text-dim);text-align:center;margin:0;line-height:1.6;">Projects are stored in your browser. In a real app, they'd sync to a cloud database.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="hub-toast" id="hubToast"><i class="fas fa-check-circle"></i><span id="hubToastMsg"></span></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CODEHUB — Full Implementation
+// ════════════════════════════════════════════════════════
+(function() {
+
+// ── Firebase Hub Storage ────────────────────────────────
+const HUB_RATINGS_KEY = 'cs_hub_ratings';
+const HUB_FB_PATH = 'hub/projects';
+const SEED_PROJECTS = []; // no seed data — only real community projects
+
+// ── State ───────────────────────────────────────────────
+let hubSort = 'trending';
+let hubTag  = 'all';
+let hubCurrentProject = null;
+let hubPublishTags = [];
+let hubProjectsCache = [];   // local mirror of Firebase data
+let hubFbListenerRef = null; // active Firebase listener reference
+let hubLoading = false;
+
+// ── Firebase Helpers ────────────────────────────────────
+function hubWaitForFB() {
+  return new Promise(res => {
+    const check = () => window._fbDB ? res(window._fbDB) : setTimeout(check, 100);
+    check();
+  });
+}
+
+// Convert Firebase snapshot to flat array (handles comments as object)
+function hubSnapToArray(snap) {
+  const data = snap.val() || {};
+  return Object.entries(data).map(([id, p]) => ({
+    ...p,
+    id,
+    comments: p.comments ? Object.values(p.comments) : [],
+    stars:     p.stars     || 0,
+    likes:     p.likes     || 0,
+    downloads: p.downloads || 0
+  }));
+}
+
+// Subscribe to real-time Firebase updates (called when hub opens)
+async function hubSubscribe() {
+  if (hubFbListenerRef) return; // already subscribed
+  hubLoading = true;
+  hubShowLoading(true);
+  try {
+    const db = await hubWaitForFB();
+    const ref = db.ref(HUB_FB_PATH);
+    hubFbListenerRef = ref;
+    ref.on('value', snap => {
+      hubProjectsCache = hubSnapToArray(snap);
+      hubLoading = false;
+      hubShowLoading(false);
+      hubRender();
+    }, err => {
+      console.warn('Hub Firebase read error:', err);
+      hubLoading = false;
+      hubShowLoading(false);
+    });
+  } catch(e) {
+    hubLoading = false;
+    hubShowLoading(false);
+  }
+}
+
+// Unsubscribe when hub closes (saves bandwidth)
+function hubUnsubscribe() {
+  if (hubFbListenerRef) {
+    hubFbListenerRef.off();
+    hubFbListenerRef = null;
+  }
+}
+
+function hubShowLoading(show) {
+  const grid  = document.getElementById('hubGrid');
+  const empty = document.getElementById('hubEmptyState');
+  const ldr   = document.getElementById('hubLoadingState');
+  if (!grid) return;
+  if (show) {
+    grid.innerHTML  = '';
+    if (empty) empty.style.display = 'none';
+    if (ldr)   ldr.style.display   = 'block';
+  } else {
+    if (ldr) ldr.style.display = 'none';
+  }
+}
+
+// Synchronous load from cache (for all existing callers)
+function hubLoad() { return [...hubProjectsCache]; }
+
+// No-op — all writes go directly to Firebase now
+function hubSaveCommunity() {}
+
+// Ratings stay local (per-user preference)
+function hubGetRatings() {
+  try { return JSON.parse(localStorage.getItem(HUB_RATINGS_KEY) || '{}'); } catch(e) { return {}; }
+}
+function hubSaveRatings(r) {
+  try { localStorage.setItem(HUB_RATINGS_KEY, JSON.stringify(r)); } catch(e) {}
+}
+
+// ── Open / Close ────────────────────────────────────────
+window.openHub = function() {
+  const badge = document.getElementById('hubNavBadge');
+  if (badge) badge.style.display = 'none';
+  document.getElementById('hubOverlay').classList.add('hub-open');
+  hubPopulatePublishProjects();
+  hubSubscribe(); // start real-time Firebase listener
+};
+
+window.closeHub = function() {
+  document.getElementById('hubOverlay').classList.remove('hub-open');
+  hubUnsubscribe(); // stop Firebase listener to save bandwidth
+};
+
+// ── Sort & Tag Controls ─────────────────────────────────
+window.hubSetSort = function(sort) {
+  hubSort = sort;
+  ['trending','new','top','most-downloaded'].forEach(s => {
+    document.getElementById('hfilt-' + s)?.classList.toggle('active', s === sort);
+  });
+  const titles = {
+    trending: '<i class="fas fa-fire"></i> Trending This Week',
+    new: '<i class="fas fa-bolt"></i> Newest Projects',
+    top: '<i class="fas fa-trophy"></i> Top Rated',
+    'most-downloaded': '<i class="fas fa-download"></i> Most Downloaded'
+  };
+  document.getElementById('hubSectionTitle').innerHTML = titles[sort] || '';
+  hubRender();
+};
+
+window.hubSetTag = function(tag) {
+  hubTag = tag;
+  ['all','game','animation','tool','art','3d'].forEach(t => {
+    document.getElementById('htag-' + t)?.classList.toggle('active', t === tag);
+  });
+  hubRender();
+};
+
+window.hubFilterProjects = function() {
+  hubRender();
+};
+
+// ── Main Render ─────────────────────────────────────────
+function hubRender() {
+  let projects = hubLoad();
+  const query = (document.getElementById('hubSearchInput')?.value || '').toLowerCase().trim();
+
+  // Filter by tag
+  if (hubTag !== 'all') {
+    projects = projects.filter(p => p.tags && p.tags.includes(hubTag));
+  }
+
+  // Filter by search
+  if (query) {
+    projects = projects.filter(p =>
+      p.title.toLowerCase().includes(query) ||
+      p.author.toLowerCase().includes(query) ||
+      p.desc.toLowerCase().includes(query) ||
+      (p.tags && p.tags.some(t => t.includes(query)))
+    );
+  }
+
+  // Sort
+  if (hubSort === 'trending') {
+    projects = projects.sort((a,b) => (b.likes + b.downloads * 0.5) - (a.likes + a.downloads * 0.5));
+  } else if (hubSort === 'new') {
+    projects = projects.sort((a,b) => b.publishedAt - a.publishedAt);
+  } else if (hubSort === 'top') {
+    projects = projects.sort((a,b) => b.stars - a.stars);
+  } else if (hubSort === 'most-downloaded') {
+    projects = projects.sort((a,b) => b.downloads - a.downloads);
+  }
+
+  // Featured banner — show most liked real community project
+  const featuredSection = document.getElementById('hubFeaturedSection');
+  const allProjects = hubLoad();
+  const featured = allProjects.filter(p => p.featured || p.likes >= 10);
+  if (featured.length && !query && hubTag === 'all') {
+    const f = featured.sort((a,b) => (b.likes||0) - (a.likes||0))[0];
+    featuredSection.innerHTML = `
+      <div class="hub-featured" onclick="hubOpenDetail('${f.id}')" style="cursor:pointer;">
+        <span class="hub-featured-badge"><i class="fas fa-star" style="font-size:8px;"></i> FEATURED</span>
+        <div class="hub-featured-preview">
+          ${(()=>{ const _ft=(f.tags||[])[0]||'html'; const _fim={html:'fa-code',css:'fa-paint-brush',js:'fa-bolt',game:'fa-gamepad',animation:'fa-film',tool:'fa-wrench',art:'fa-palette','3d':'fa-cube'}; return `<i class="fas ${_fim[_ft]||'fa-code'}" style="font-size:28px;color:var(--accent);opacity:0.7;"></i>`; })()}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:900;color:var(--text);margin-bottom:6px;">${f.title}</div>
+          <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">${f.desc.slice(0,120)}…</div>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <span style="font-size:12px;color:#f59e0b;font-weight:700;"><i class="fas fa-star"></i> ${f.stars||0}</span>
+            <span style="font-size:12px;color:#10b981;font-weight:700;"><i class="fas fa-download"></i> ${fmtNum(f.downloads||0)}</span>
+            <span style="font-size:12px;color:var(--text-dim);">by <b style="color:var(--text);">${f.author}</b></span>
+          </div>
+        </div>
+        <button class="hub-btn hub-btn-primary" style="flex-shrink:0;" onclick="event.stopPropagation();hubOpenDetail('${f.id}')"><i class="fas fa-eye"></i> View</button>
+      </div>
+    `;
+  } else {
+    featuredSection.innerHTML = '';
+  }
+
+  // Update count label
+  document.getElementById('hubCountLabel').textContent = `${projects.length} project${projects.length !== 1 ? 's' : ''}`;
+
+  // Render grid
+  const grid = document.getElementById('hubGrid');
+  const empty = document.getElementById('hubEmptyState');
+  if (!projects.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    const emptyTitle = document.getElementById('hubEmptyTitle');
+    const emptyMsg = document.getElementById('hubEmptyMsg');
+    if (query || hubTag !== 'all') {
+      if (emptyTitle) emptyTitle.textContent = 'No projects found';
+      if (emptyMsg) emptyMsg.innerHTML = 'Try different filters or search terms';
+    } else {
+      if (emptyTitle) emptyTitle.textContent = 'Be the first to publish!';
+      if (emptyMsg) emptyMsg.innerHTML = 'No projects yet — open a project in the IDE and hit <strong>Publish Project</strong> to share it with the community';
+    }
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = projects.map(p => hubCardHTML(p)).join('');
+}
+
+function fmtNum(n) {
+  if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+  return n + '';
+}
+
+function hubTagIcon(tags, size) {
+  const t = (tags||[])[0] || 'html';
+  const icons = {
+    html: 'fa-code', css: 'fa-paint-brush', js: 'fa-bolt',
+    game: 'fa-gamepad', animation: 'fa-film', tool: 'fa-wrench',
+    art: 'fa-palette', '3d': 'fa-cube', python: 'fa-python',
+    react: 'fa-atom', node: 'fa-server'
+  };
+  const icon = icons[t] || 'fa-code';
+  const sz = size || 32;
+  return `<i class="fas ${icon}" style="font-size:${sz}px;color:var(--accent);opacity:0.65;"></i>`;
+}
+
+function hubCardHTML(p) {
+  const tagHTML = (p.tags || []).slice(0,3).map(t => `<span class="hub-card-tag tag-${t}">${t}</span>`).join('');
+  const starsDisp = Number(p.stars).toFixed(1);
+  return `
+    <div class="hub-card" onclick="hubOpenDetail('${p.id}')">
+      <div class="hub-card-preview">
+        ${hubTagIcon(p.tags, 36)}
+        <div class="hub-card-preview-overlay"></div>
+        <span class="hub-card-lang-badge" style="background:rgba(var(--accent-rgb),0.15);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);">${(p.tags||['html'])[0].toUpperCase()}</span>
+      </div>
+      <div class="hub-card-body">
+        <div class="hub-card-title">${p.title}</div>
+        <div class="hub-card-desc">${p.desc}</div>
+        <div class="hub-card-tags">${tagHTML}</div>
+        <div class="hub-card-footer">
+          <div class="hub-card-author">
+            <div class="hub-card-avatar" style="background:${p.authorColor||'#3b82f6'};">${(p.author||'?')[0].toUpperCase()}</div>
+            <div class="hub-card-author-name">${p.author||'Anonymous'}</div>
+          </div>
+          <div class="hub-card-stats">
+            <span class="hub-stat stars"><i class="fas fa-star"></i>${starsDisp}</span>
+            <span class="hub-stat downloads"><i class="fas fa-download"></i>${fmtNum(p.downloads||0)}</span>
+            <span class="hub-stat"><i class="fas fa-comment"></i>${(p.comments||[]).length}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Detail View ─────────────────────────────────────────
+window.hubOpenDetail = function(id) {
+  const projects = hubLoad();
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  hubCurrentProject = p;
+
+  // Increment downloads in Firebase
+  hubWaitForFB().then(db => {
+    db.ref(`${HUB_FB_PATH}/${id}/downloads`).transaction(v => (v || 0) + 1);
+  });
+
+  // Header
+  const _tag0 = (p.tags||[])[0]||'html';
+  const _tagIconMap = {html:'fa-code',css:'fa-paint-brush',js:'fa-bolt',game:'fa-gamepad',animation:'fa-film',tool:'fa-wrench',art:'fa-palette','3d':'fa-cube'};
+  document.getElementById('hubDetailAvatar').style.background = `linear-gradient(135deg, rgba(var(--accent-rgb),0.2), rgba(var(--accent-rgb),0.05))`;
+  document.getElementById('hubDetailAvatar').style.border = `1px solid rgba(var(--accent-rgb),0.3)`;
+  document.getElementById('hubDetailAvatar').innerHTML = `<i class="fas ${_tagIconMap[_tag0]||'fa-code'}" style="font-size:18px;color:var(--accent);"></i>`;
+  document.getElementById('hubDetailTitle').textContent = p.title;
+  document.getElementById('hubDetailMeta').innerHTML = `by <b>${p.author}</b> · ${timeAgo(p.publishedAt)}`;
+
+  // Preview
+  document.getElementById('hubDetailPreview').innerHTML = `<i class="fas ${_tagIconMap[_tag0]||'fa-code'}" style="font-size:80px;color:var(--accent);opacity:0.5;"></i>`;
+
+  // Stats
+  document.getElementById('hubDetailStars').textContent = Number(p.stars).toFixed(1);
+  document.getElementById('hubDetailDownloads').textContent = fmtNum(p.downloads||0);
+  document.getElementById('hubDetailCommentCount').textContent = (p.comments||[]).length;
+  document.getElementById('hubDetailLikes').textContent = fmtNum(p.likes||0);
+
+  // Desc
+  document.getElementById('hubDetailDesc').textContent = p.desc;
+
+  // Tags
+  document.getElementById('hubDetailTags').innerHTML = (p.tags||[]).map(t =>
+    `<span class="hub-card-tag tag-${t}">${t}</span>`).join('');
+
+  // Rating stars
+  const ratings = hubGetRatings();
+  const myRating = ratings[id] || 0;
+  hubUpdateRatingStars(myRating);
+  document.getElementById('hubRatingMsg').textContent = myRating ? `You rated: ${myRating} ★` : 'Tap to rate';
+
+  // My comment avatar
+  const myName = (typeof myCollabName !== 'undefined' && myCollabName) || 'You';
+  document.getElementById('hubCommentMyAvatar').textContent = myName[0].toUpperCase();
+
+  // Comments
+  hubRenderComments(p.comments || []);
+
+  document.getElementById('hubDetailOverlay').classList.add('hub-detail-open');
+};
+
+function hubUpdateRatingStars(n) {
+  document.querySelectorAll('#hubRatingStars .hub-rating-star').forEach((s, i) => {
+    s.classList.toggle('filled', i < n);
+  });
+}
+
+window.hubRate = function(n) {
+  if (!hubCurrentProject) return;
+  const ratings = hubGetRatings();
+  const prevRating = ratings[hubCurrentProject.id] || 0;
+  ratings[hubCurrentProject.id] = n;
+  hubSaveRatings(ratings);
+  hubUpdateRatingStars(n);
+  document.getElementById('hubRatingMsg').textContent = `You rated: ${n} ★`;
+
+  // Update rolling average in Firebase
+  hubWaitForFB().then(db => {
+    const ref = db.ref(`${HUB_FB_PATH}/${hubCurrentProject.id}`);
+    ref.transaction(p => {
+      if (!p) return p;
+      const totalRatings = (p.ratingCount || 0) + (prevRating ? 0 : 1);
+      const totalScore   = (p.stars || 0) * Math.max(1, p.ratingCount || 1) - prevRating + n;
+      p.ratingCount = totalRatings;
+      p.stars = totalRatings ? +(totalScore / totalRatings).toFixed(1) : n;
+      return p;
+    });
+  });
+  hubShowToast('Rating saved!', 'success');
+};
+
+function hubRenderComments(comments) {
+  const el = document.getElementById('hubCommentsList');
+  if (!comments.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:12px 0;">No comments yet. Be the first!</div>';
+    return;
+  }
+  el.innerHTML = comments.map(c => `
+    <div class="hub-comment">
+      <div class="hub-comment-avatar" style="background:${c.authorColor||'#3b82f6'};">${(c.author||'?')[0].toUpperCase()}</div>
+      <div class="hub-comment-body">
+        <div class="hub-comment-meta">
+          <span class="hub-comment-author">${c.author||'Anonymous'}</span>
+          <span>${c.time||'now'}</span>
+        </div>
+        <div class="hub-comment-text">${c.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.hubPostComment = function() {
+  const inp = document.getElementById('hubCommentInput');
+  const text = inp.value.trim();
+  if (!text || !hubCurrentProject) return;
+
+  const myName = (typeof myCollabName !== 'undefined' && myCollabName) || 'Anonymous';
+  const newComment = {
+    author: myName,
+    authorColor: '#3b82f6',
+    text,
+    time: 'just now'
+  };
+
+  inp.value = '';
+  hubShowToast('Posting comment…', '');
+
+  hubWaitForFB().then(db => {
+    db.ref(`${HUB_FB_PATH}/${hubCurrentProject.id}/comments`).push(newComment)
+      .then(() => {
+        hubShowToast('Comment posted!', 'success');
+        // Firebase listener will auto-update the project, but also update detail view immediately
+        if (hubCurrentProject) {
+          hubCurrentProject.comments = [...(hubCurrentProject.comments || []), newComment];
+          hubRenderComments(hubCurrentProject.comments);
+          document.getElementById('hubDetailCommentCount').textContent = hubCurrentProject.comments.length;
+        }
+      })
+      .catch(e => hubShowToast('Could not post comment', 'error'));
+  });
+};
+
+window.closeHubDetail = function() {
+  document.getElementById('hubDetailOverlay').classList.remove('hub-detail-open');
+  hubCurrentProject = null;
+  hubRender();
+};
+
+// ── Open in IDE ─────────────────────────────────────────
+window.hubOpenInIDE = function() {
+  if (!hubCurrentProject) return;
+  const p = hubCurrentProject;
+  if (!p.code) { hubShowToast('No source code available', 'error'); return; }
+
+  const projName = 'Hub_' + p.title.replace(/[^a-zA-Z0-9]/g,'_');
+  
+  // Create project in the IDE if db exists
+  if (typeof db !== 'undefined') {
+    if (!db[projName]) {
+      db[projName] = { html: '', css: '', js: '', _customFiles: {}, _folders: {} };
+    }
+    db[projName].html = p.code.html || '';
+    db[projName].css  = p.code.css  || '';
+    db[projName].js   = p.code.js   || '';
+
+    if (typeof saveProject === 'function') saveProject();
+    if (typeof switchProject === 'function') {
+      switchProject(projName);
+    } else if (typeof renderProjects === 'function') {
+      activeProj = projName;
+      renderProjects();
+      if (typeof switchFile === 'function') switchFile('html');
+      if (typeof updatePreview === 'function') updatePreview();
+    }
+  }
+
+  // Downloads already incremented in Firebase via hubOpenDetail
+
+  closeHubDetail();
+  closeHub();
+  hubShowToast(`✅ "${p.title}" opened in IDE!`, 'success');
+};
+
+// ── Publish ─────────────────────────────────────────────
+window.openHubPublish = function() {
+  hubPublishTags = [];
+  hubPublishEmoji = '🚀';
+  document.getElementById('hubPublishTitle').value = '';
+  document.getElementById('hubPublishDesc').value = '';
+  document.getElementById('hubPublishAuthor').value =
+    (typeof myCollabName !== 'undefined' && myCollabName) || '';
+
+  // Reset tag buttons
+  document.querySelectorAll('#hubTagPicker .hub-tag-filter').forEach(b => b.classList.remove('active'));
+
+  document.getElementById('hubPublishOverlay').classList.add('open');
+  hubPopulatePublishProjects();
+};
+
+window.closeHubPublish = function() {
+  document.getElementById('hubPublishOverlay').classList.remove('open');
+};
+
+window.hubTogglePublishTag = function(tag) {
+  const btn = document.getElementById('hpub-' + tag);
+  if (hubPublishTags.includes(tag)) {
+    hubPublishTags = hubPublishTags.filter(t => t !== tag);
+    btn?.classList.remove('active');
+  } else {
+    hubPublishTags.push(tag);
+    btn?.classList.add('active');
+  }
+};
+
+window.hubSelectEmoji = function(emoji) {
+  hubPublishEmoji = emoji;
+  document.querySelectorAll('#hubEmojiPicker button').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--bg)';
+  });
+  const btn = document.getElementById('hpub-emoji-' + emoji);
+  if (btn) {
+    btn.style.borderColor = '#f97316';
+    btn.style.background = 'rgba(249,115,22,0.15)';
+  }
+};
+
+function hubPopulatePublishProjects() {
+  const sel = document.getElementById('hubPublishProject');
+  if (!sel) return;
+  if (typeof db !== 'undefined') {
+    sel.innerHTML = Object.keys(db).map(k => `<option value="${k}">${k}</option>`).join('');
+  } else {
+    sel.innerHTML = '<option value="">No projects found</option>';
+  }
+  // Pre-select current active project
+  if (typeof activeProj !== 'undefined' && activeProj) sel.value = activeProj;
+}
+
+window.hubPublishProject = function() {
+  const title  = document.getElementById('hubPublishTitle').value.trim();
+  const desc   = document.getElementById('hubPublishDesc').value.trim();
+  const projKey = document.getElementById('hubPublishProject').value;
+  const author = document.getElementById('hubPublishAuthor').value.trim() || 'Anonymous';
+
+  if (!title) { hubShowToast('Please enter a title', 'error'); return; }
+  if (!desc)  { hubShowToast('Please enter a description', 'error'); return; }
+
+  const tags = [...hubPublishTags];
+  if (!tags.length) { if (projKey) tags.push('html'); }
+
+  let code = { html: '', css: '', js: '' };
+  if (typeof db !== 'undefined' && db[projKey]) {
+    code = { html: db[projKey].html||'', css: db[projKey].css||'', js: db[projKey].js||'' };
+  }
+
+  const colors = ['#f97316','#3b82f6','#10b981','#8b5cf6','#ec4899','#f59e0b','#22d3ee'];
+  const newProject = {
+    id: 'user-' + Date.now(),
+    title, desc, author, tags, code,
+    emoji: hubPublishEmoji,
+    authorColor: colors[Math.floor(Math.random() * colors.length)],
+    stars: 0, downloads: 0, likes: 0,
+    comments: [],
+    featured: false,
+    publishedAt: Date.now()
+  };
+
+  // Push to Firebase — visible to all users in real-time
+  hubWaitForFB().then(db => {
+    const ref = db.ref(HUB_FB_PATH).push();
+    newProject.id = ref.key;
+    ref.set(newProject).then(() => {
+      closeHubPublish();
+      hubSetSort('new');
+      hubShowToast(`"${title}" published to Hub!`, 'success');
+    }).catch(e => {
+      hubShowToast('Publish failed — check connection', 'error');
+      console.error('Hub publish error:', e);
+    });
+  });
+};
+
+// ── Utils ───────────────────────────────────────────────
+function timeAgo(ts) {
+  if (!ts) return 'recently';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+function hubShowToast(msg, type) {
+  const t = document.getElementById('hubToast');
+  const m = document.getElementById('hubToastMsg');
+  if (!t || !m) return;
+  m.textContent = msg;
+  t.className = `hub-toast ${type||''} show`;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Show hub badge on sidebar icon to hint users (dot indicator)
+setTimeout(() => {
+  const badge = document.getElementById('hubNavBadge');
+  if (badge) badge.style.display = 'block';
+  setTimeout(() => { if (badge) badge.style.display = 'none'; }, 6000);
+}, 1500);
+
+// Close detail on backdrop click
+document.getElementById('hubDetailOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeHubDetail();
+});
+document.getElementById('hubPublishOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeHubPublish();
+});
 
 })();
 </script>
