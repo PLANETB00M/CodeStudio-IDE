@@ -2163,6 +2163,8 @@
         .activity-bar .activity-icon:nth-child(4){animation:cs-fadeInLeft 0.35s 0.33s ease both}
         .activity-bar .activity-icon:nth-child(5){animation:cs-fadeInLeft 0.35s 0.39s ease both}
         .activity-bar .activity-icon:nth-child(6){animation:cs-fadeInLeft 0.35s 0.45s ease both}
+        .activity-bar .activity-icon:nth-child(7){animation:cs-fadeInLeft 0.35s 0.51s ease both}
+        .activity-bar .activity-icon:nth-child(7){animation:cs-fadeInLeft 0.35s 0.51s ease both}
 
         .activity-icon { transition: all 0.25s cubic-bezier(0.34,1.4,0.64,1) !important; }
         .activity-icon:hover {
@@ -2575,6 +2577,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
     <script>
         function _initFirebase() {
             if (typeof firebase === 'undefined') {
@@ -2591,8 +2594,9 @@
                 appId: "1:751650431786:web:1ced3eb81dcedc540f3453"
             };
             if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
-            window._fbAuth = firebase.auth();
-            window._fbDB   = firebase.database();
+            window._fbAuth    = firebase.auth();
+            window._fbDB      = firebase.database();
+            window._fbStorage = firebase.storage();
 
             // Listen for auth state changes
             window._fbAuth.onAuthStateChanged(fbUser => {
@@ -3740,7 +3744,7 @@
                             <i class="fas fa-chevron-down" id="privacyPolicyChevron" style="font-size:11px;color:var(--text-dim);transition:transform 0.25s;"></i>
                         </button>
                         <div id="privacyPolicyAccordion" style="display:none;flex-direction:column;gap:10px;margin-top:10px;">
-                            <div style="font-size:10px;color:var(--text-dim);padding:0 2px;margin-bottom:2px;">Last updated: June 2025 · CodeStudio v956.28.1</div>
+                            <div style="font-size:10px;color:var(--text-dim);padding:0 2px;margin-bottom:2px;">Last updated: June 2025 · CodeStudio v989.34.6</div>
 
                             <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">
                                 <div style="font-size:11px;font-weight:800;color:var(--text);margin-bottom:5px;display:flex;align-items:center;gap:6px;"><i class="fas fa-circle-info" style="color:var(--accent);font-size:10px;"></i> Overview</div>
@@ -4263,7 +4267,7 @@
             <div class="activity-icon" id="actTools" onclick="switchSidebarTab('tools')" title="Dev Tools"><i class="fas fa-screwdriver-wrench"></i></div>
             <div class="activity-icon" id="actLibraries" onclick="switchSidebarTab('libraries')" title="Libraries"><i class="fas fa-box-open"></i></div>
             <div class="activity-icon" id="actGroqAI" onclick="switchSidebarTab('groqai')" title="Groq AI — Analyze Code"><i class="fas fa-robot"></i></div>
-            <div class="activity-icon" id="actHub" onclick="openHub()" title="CodeHub — Browse &amp; Share Projects" style="position:relative;"><i class="fas fa-rocket"></i><span id="hubNavBadge" style="position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent);border-radius:50%;display:none;"></span></div>
+            <div class="activity-icon" id="actHub" onclick="openHub()" title="CodeStudio Hub — Browse &amp; Share Projects" style="position:relative;"><i class="fas fa-store"></i><span id="hubNavBadge" style="position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent);border-radius:50%;display:none;"></span></div>
             <div id="syncDisplay" onclick="toggleAuthModal()" title="Account" style="width:100%; height:50px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; margin-top:auto;">
                 <div class="user-pill-avatar" id="navAvatarPill" style="background:transparent; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; color:var(--text-dim); flex-shrink:0; overflow:hidden; transition:0.2s;"><i class="fas fa-circle-user"></i></div>
                 <span id="navUserLabel" style="display:none;"></span>
@@ -17560,8 +17564,8 @@ var _markedPatchInterval = setInterval(function() {
   <!-- Top Bar -->
   <div class="hub-topbar">
     <div class="hub-brand">
-      <div class="hub-brand-icon"><i class="fas fa-rocket"></i></div>
-      Code<span>Hub</span>
+      <div class="hub-brand-icon"><i class="fas fa-store"></i></div>
+      CodeStudio<span> Hub</span>
     </div>
     <div class="hub-search-wrap">
       <i class="fas fa-search"></i>
@@ -17606,7 +17610,7 @@ var _markedPatchInterval = setInterval(function() {
       <div class="hub-grid" id="hubGrid"></div>
       <div id="hubEmptyState" style="display:none;">
         <div class="hub-empty">
-          <i class="fas fa-rocket"></i>
+          <i class="fas fa-store"></i>
           <h3 id="hubEmptyTitle">Be the first to publish!</h3>
           <p id="hubEmptyMsg">No projects yet — open a project in the IDE and hit <strong>Publish Project</strong> to share it with the community</p>
         </div>
@@ -17626,11 +17630,14 @@ var _markedPatchInterval = setInterval(function() {
         <div id="hubDetailMeta" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
+        <button class="hub-btn" id="hubEditBtn" onclick="hubOpenEdit()" style="display:none;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;"><i class="fas fa-pen"></i> Edit</button>
+        <button class="hub-btn" id="hubDeleteBtn" onclick="hubDeleteProject()" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;"><i class="fas fa-trash"></i> Delete</button>
         <button class="hub-btn hub-btn-primary" id="hubOpenIdeBtn" onclick="hubOpenInIDE()"><i class="fas fa-code"></i> Open in IDE</button>
         <button class="hub-close-btn" onclick="closeHubDetail()"><i class="fas fa-times"></i></button>
       </div>
     </div>
     <div class="hub-detail-preview" id="hubDetailPreview"></div>
+    <div id="hubDetailImages" style="display:flex;gap:8px;overflow-x:auto;padding:0 22px 14px;scrollbar-width:none;"></div>
     <div class="hub-detail-body">
       <!-- Stats row -->
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -17704,7 +17711,7 @@ var _markedPatchInterval = setInterval(function() {
     <div style="padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
       <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ef4444);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0;"><i class="fas fa-upload"></i></div>
       <div style="flex:1;">
-        <div style="font-size:14px;font-weight:800;color:var(--text);">Publish to CodeHub</div>
+        <div style="font-size:14px;font-weight:800;color:var(--text);">Publish to CodeStudio Hub</div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Share your project with the community</div>
       </div>
       <button class="hub-close-btn" onclick="closeHubPublish()"><i class="fas fa-times"></i></button>
@@ -17744,10 +17751,69 @@ var _markedPatchInterval = setInterval(function() {
         <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Your Name</label>
         <input id="hubPublishAuthor" type="text" placeholder="Anonymous" maxlength="30" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
       </div>
-      <button class="hub-btn hub-btn-primary" onclick="hubPublishProject()" style="justify-content:center;padding:12px;font-size:13px;">
-        <i class="fas fa-rocket"></i> Publish to Hub
+      <!-- Preview Images -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Preview Images <span style="color:var(--text-dim);font-weight:400;">(up to 4)</span></label>
+        <div id="hubPublishImagePreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg);border:1px dashed var(--border);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--text-dim);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <i class="fas fa-image" style="color:var(--accent);font-size:14px;"></i>
+          <span>Click to add screenshot or preview image</span>
+          <input type="file" id="hubPublishImageInput" accept="image/*" multiple style="display:none;" onchange="hubHandlePublishImages(this)">
+        </label>
+      </div>
+      <button class="hub-btn hub-btn-primary" id="hubPublishBtn" onclick="hubPublishProject()" style="justify-content:center;padding:12px;font-size:13px;">
+        <i class="fas fa-store"></i> Publish to Hub
       </button>
-      <p style="font-size:10px;color:var(--text-dim);text-align:center;margin:0;line-height:1.6;">Projects are stored in your browser. In a real app, they'd sync to a cloud database.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HUB EDIT OVERLAY ══ -->
+<div id="hubEditOverlay" style="display:none;position:fixed;inset:0;z-index:10005;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);overflow-y:auto;padding:40px 20px;">
+  <div style="max-width:520px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:hidden;">
+    <div style="padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0;"><i class="fas fa-pen"></i></div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:800;color:var(--text);">Edit Project</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Update your project details</div>
+      </div>
+      <button class="hub-close-btn" onclick="closeHubEdit()"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Title <span style="color:#ef4444;">*</span></label>
+        <input id="hubEditTitle" type="text" maxlength="60" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Description <span style="color:#ef4444;">*</span></label>
+        <textarea id="hubEditDesc" rows="3" maxlength="300" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;resize:none;line-height:1.55;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Code (HTML)</label>
+        <textarea id="hubEditHtml" rows="5" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:11px;font-family:'JetBrains Mono',monospace;outline:none;resize:vertical;line-height:1.5;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Code (CSS)</label>
+        <textarea id="hubEditCss" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:11px;font-family:'JetBrains Mono',monospace;outline:none;resize:vertical;line-height:1.5;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Code (JS)</label>
+        <textarea id="hubEditJs" rows="4" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:11px;font-family:'JetBrains Mono',monospace;outline:none;resize:vertical;line-height:1.5;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <!-- Preview Images -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Preview Images</label>
+        <div id="hubEditImagePreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"></div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg);border:1px dashed var(--border);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--text-dim);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <i class="fas fa-image" style="color:var(--accent);font-size:14px;"></i>
+          <span>Add more screenshots</span>
+          <input type="file" id="hubEditImageInput" accept="image/*" multiple style="display:none;" onchange="hubHandleEditImages(this)">
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="hub-btn" onclick="closeHubEdit()" style="flex:1;justify-content:center;padding:11px;">Cancel</button>
+        <button class="hub-btn hub-btn-primary" id="hubEditSaveBtn" onclick="hubSaveEdit()" style="flex:2;justify-content:center;padding:11px;font-size:13px;"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -17859,11 +17925,21 @@ function hubSaveRatings(r) {
 
 // ── Open / Close ────────────────────────────────────────
 window.openHub = function() {
+  // Hub requires Google account
+  const user = window._fbCurrentUser;
+  if (!user || !user.providerData || !user.providerData.some(p => p.providerId === 'google.com')) {
+    hubShowToast('Sign in with Google to access the Hub', 'error');
+    // Trigger Google sign-in
+    signInWithFirebaseGoogle().then(u => {
+      if (u) openHub();
+    }).catch(() => {});
+    return;
+  }
   const badge = document.getElementById('hubNavBadge');
   if (badge) badge.style.display = 'none';
   document.getElementById('hubOverlay').classList.add('hub-open');
   hubPopulatePublishProjects();
-  hubSubscribe(); // start real-time Firebase listener
+  hubSubscribe();
 };
 
 window.closeHub = function() {
@@ -18003,10 +18079,14 @@ function hubTagIcon(tags, size) {
 function hubCardHTML(p) {
   const tagHTML = (p.tags || []).slice(0,3).map(t => `<span class="hub-card-tag tag-${t}">${t}</span>`).join('');
   const starsDisp = Number(p.stars).toFixed(1);
+  const firstImg = (p.previewImages && p.previewImages[0]) || null;
+  const previewContent = firstImg
+    ? `<img src="${firstImg}" style="width:100%;height:100%;object-fit:cover;border-radius:0;">`
+    : hubTagIcon(p.tags, 36);
   return `
     <div class="hub-card" onclick="hubOpenDetail('${p.id}')">
       <div class="hub-card-preview">
-        ${hubTagIcon(p.tags, 36)}
+        ${previewContent}
         <div class="hub-card-preview-overlay"></div>
         <span class="hub-card-lang-badge" style="background:rgba(var(--accent-rgb),0.15);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);">${(p.tags||['html'])[0].toUpperCase()}</span>
       </div>
@@ -18052,7 +18132,23 @@ window.hubOpenDetail = function(id) {
   document.getElementById('hubDetailMeta').innerHTML = `by <b>${p.author}</b> · ${timeAgo(p.publishedAt)}`;
 
   // Preview
-  document.getElementById('hubDetailPreview').innerHTML = `<i class="fas ${_tagIconMap[_tag0]||'fa-code'}" style="font-size:80px;color:var(--accent);opacity:0.5;"></i>`;
+  const previewImgs = p.previewImages || [];
+  if (previewImgs.length) {
+    document.getElementById('hubDetailPreview').style.display = 'none';
+    const imgRow = document.getElementById('hubDetailImages');
+    imgRow.innerHTML = previewImgs.map((url, i) =>
+      `<img src="${url}" onclick="hubLightbox('${url}')" style="height:160px;border-radius:10px;object-fit:cover;cursor:zoom-in;border:1px solid var(--border);flex-shrink:0;">`
+    ).join('');
+    imgRow.style.display = 'flex';
+  } else {
+    document.getElementById('hubDetailPreview').style.display = 'flex';
+    document.getElementById('hubDetailPreview').innerHTML = `<i class="fas ${_tagIconMap[_tag0]||'fa-code'}" style="font-size:80px;color:var(--accent);opacity:0.5;"></i>`;
+    document.getElementById('hubDetailImages').style.display = 'none';
+    document.getElementById('hubDetailImages').innerHTML = '';
+  }
+
+  // Owner controls
+  hubUpdateOwnerControls(p);
 
   // Stats
   document.getElementById('hubDetailStars').textContent = Number(p.stars).toFixed(1);
@@ -18261,48 +18357,19 @@ function hubPopulatePublishProjects() {
   if (typeof activeProj !== 'undefined' && activeProj) sel.value = activeProj;
 }
 
-window.hubPublishProject = function() {
-  const title  = document.getElementById('hubPublishTitle').value.trim();
-  const desc   = document.getElementById('hubPublishDesc').value.trim();
-  const projKey = document.getElementById('hubPublishProject').value;
-  const author = document.getElementById('hubPublishAuthor').value.trim() || 'Anonymous';
+// hubPublishProject is defined below as async version with image upload
 
-  if (!title) { hubShowToast('Please enter a title', 'error'); return; }
-  if (!desc)  { hubShowToast('Please enter a description', 'error'); return; }
-
-  const tags = [...hubPublishTags];
-  if (!tags.length) { if (projKey) tags.push('html'); }
-
-  let code = { html: '', css: '', js: '' };
-  if (typeof db !== 'undefined' && db[projKey]) {
-    code = { html: db[projKey].html||'', css: db[projKey].css||'', js: db[projKey].js||'' };
+// ── Lightbox ────────────────────────────────────────────
+window.hubLightbox = function(url) {
+  let lb = document.getElementById('hubLightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'hubLightbox';
+    lb.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+    lb.onclick = () => lb.remove();
+    document.body.appendChild(lb);
   }
-
-  const colors = ['#f97316','#3b82f6','#10b981','#8b5cf6','#ec4899','#f59e0b','#22d3ee'];
-  const newProject = {
-    id: 'user-' + Date.now(),
-    title, desc, author, tags, code,
-    emoji: hubPublishEmoji,
-    authorColor: colors[Math.floor(Math.random() * colors.length)],
-    stars: 0, downloads: 0, likes: 0,
-    comments: [],
-    featured: false,
-    publishedAt: Date.now()
-  };
-
-  // Push to Firebase — visible to all users in real-time
-  hubWaitForFB().then(db => {
-    const ref = db.ref(HUB_FB_PATH).push();
-    newProject.id = ref.key;
-    ref.set(newProject).then(() => {
-      closeHubPublish();
-      hubSetSort('new');
-      hubShowToast(`"${title}" published to Hub!`, 'success');
-    }).catch(e => {
-      hubShowToast('Publish failed — check connection', 'error');
-      console.error('Hub publish error:', e);
-    });
-  });
+  lb.innerHTML = `<img src="${url}" style="max-width:90vw;max-height:90vh;border-radius:12px;object-fit:contain;">`;
 };
 
 // ── Utils ───────────────────────────────────────────────
@@ -18333,6 +18400,255 @@ setTimeout(() => {
   if (badge) badge.style.display = 'block';
   setTimeout(() => { if (badge) badge.style.display = 'none'; }, 6000);
 }, 1500);
+
+// ── Image Helpers ───────────────────────────────────────
+let hubPublishImageFiles = [];
+let hubEditImageFiles    = [];
+let hubEditExistingImages = []; // URLs already saved
+
+function hubFileToDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function hubUploadImagesToStorage(files, projectId) {
+  if (!window._fbStorage || !files.length) return [];
+  const urls = [];
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const ext = f.name.split('.').pop();
+    const ref = window._fbStorage.ref(`hub_previews/${projectId}/${Date.now()}_${i}.${ext}`);
+    await ref.put(f);
+    const url = await ref.getDownloadURL();
+    urls.push(url);
+  }
+  return urls;
+}
+
+async function hubDeleteStorageImages(urls) {
+  if (!window._fbStorage || !urls || !urls.length) return;
+  for (const url of urls) {
+    try {
+      await window._fbStorage.refFromURL(url).delete();
+    } catch(e) {}
+  }
+}
+
+// ── Publish image preview handlers ──────────────────────
+window.hubHandlePublishImages = async function(input) {
+  const files = Array.from(input.files);
+  const remaining = 4 - hubPublishImageFiles.length;
+  const toAdd = files.slice(0, remaining);
+  hubPublishImageFiles = [...hubPublishImageFiles, ...toAdd];
+  const container = document.getElementById('hubPublishImagePreviews');
+  for (const f of toAdd) {
+    const url = await hubFileToDataURL(f);
+    const idx = hubPublishImageFiles.indexOf(f);
+    const div = document.createElement('div');
+    div.style.cssText = 'position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;';
+    div.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">
+      <button onclick="hubRemovePublishImage(${idx},this.parentNode)" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><i class="fas fa-times"></i></button>`;
+    container.appendChild(div);
+  }
+  input.value = '';
+};
+
+window.hubRemovePublishImage = function(idx, el) {
+  hubPublishImageFiles.splice(idx, 1);
+  el.remove();
+};
+
+// ── Edit image handlers ──────────────────────────────────
+window.hubHandleEditImages = async function(input) {
+  const files = Array.from(input.files);
+  const remaining = 4 - hubEditImageFiles.length - hubEditExistingImages.length;
+  const toAdd = files.slice(0, Math.max(0, remaining));
+  hubEditImageFiles = [...hubEditImageFiles, ...toAdd];
+  const container = document.getElementById('hubEditImagePreviews');
+  for (const f of toAdd) {
+    const url = await hubFileToDataURL(f);
+    const idx = hubEditImageFiles.indexOf(f);
+    const div = document.createElement('div');
+    div.style.cssText = 'position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;';
+    div.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">
+      <button onclick="hubRemoveEditImage(${idx},this.parentNode,'new')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><i class="fas fa-times"></i></button>`;
+    container.appendChild(div);
+  }
+  input.value = '';
+};
+
+window.hubRemoveEditImage = function(idx, el, type) {
+  if (type === 'new') { hubEditImageFiles.splice(idx, 1); }
+  else { hubEditExistingImages.splice(idx, 1); }
+  el.remove();
+};
+
+// ── Owner check ─────────────────────────────────────────
+function hubIsOwner(p) {
+  const user = window._fbCurrentUser;
+  if (!user || !p) return false;
+  return p.ownerUid === user.uid;
+}
+
+// ── Show owner controls in detail ───────────────────────
+function hubUpdateOwnerControls(p) {
+  const isOwner = hubIsOwner(p);
+  document.getElementById('hubEditBtn').style.display   = isOwner ? 'flex' : 'none';
+  document.getElementById('hubDeleteBtn').style.display = isOwner ? 'flex' : 'none';
+}
+
+// ── Delete project ───────────────────────────────────────
+window.hubDeleteProject = async function() {
+  const p = hubCurrentProject;
+  if (!p || !hubIsOwner(p)) return;
+  if (!confirm(`Delete "${p.title}"? This cannot be undone.`)) return;
+  try {
+    // Delete storage images
+    if (p.previewImages && p.previewImages.length) {
+      await hubDeleteStorageImages(p.previewImages);
+    }
+    // Delete from Firebase DB
+    await hubWaitForFB().then(db => db.ref(`${HUB_FB_PATH}/${p.id}`).remove());
+    closeHubDetail();
+    hubShowToast('Project deleted', 'success');
+  } catch(e) {
+    hubShowToast('Delete failed', 'error');
+    console.error(e);
+  }
+};
+
+// ── Open Edit overlay ────────────────────────────────────
+window.hubOpenEdit = function() {
+  const p = hubCurrentProject;
+  if (!p || !hubIsOwner(p)) return;
+  document.getElementById('hubEditTitle').value = p.title || '';
+  document.getElementById('hubEditDesc').value  = p.desc  || '';
+  document.getElementById('hubEditHtml').value  = (p.code && p.code.html) || '';
+  document.getElementById('hubEditCss').value   = (p.code && p.code.css)  || '';
+  document.getElementById('hubEditJs').value    = (p.code && p.code.js)   || '';
+  hubEditImageFiles     = [];
+  hubEditExistingImages = [...(p.previewImages || [])];
+  // Render existing images
+  const container = document.getElementById('hubEditImagePreviews');
+  container.innerHTML = '';
+  hubEditExistingImages.forEach((url, idx) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;';
+    div.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">
+      <button onclick="hubRemoveEditImage(${idx},this.parentNode,'existing')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><i class="fas fa-times"></i></button>`;
+    container.appendChild(div);
+  });
+  document.getElementById('hubEditOverlay').style.display = 'block';
+};
+
+window.closeHubEdit = function() {
+  document.getElementById('hubEditOverlay').style.display = 'none';
+};
+
+// ── Save edit ────────────────────────────────────────────
+window.hubSaveEdit = async function() {
+  const p = hubCurrentProject;
+  if (!p || !hubIsOwner(p)) return;
+  const title = document.getElementById('hubEditTitle').value.trim();
+  const desc  = document.getElementById('hubEditDesc').value.trim();
+  if (!title || !desc) { hubShowToast('Title and description are required', 'error'); return; }
+  const btn = document.getElementById('hubEditSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+  try {
+    // Upload new images
+    const newUrls = await hubUploadImagesToStorage(hubEditImageFiles, p.id);
+    const allImages = [...hubEditExistingImages, ...newUrls];
+    // Find removed existing images and delete from storage
+    const removed = (p.previewImages || []).filter(u => !hubEditExistingImages.includes(u));
+    if (removed.length) await hubDeleteStorageImages(removed);
+    const updates = {
+      title,
+      desc,
+      code: {
+        html: document.getElementById('hubEditHtml').value,
+        css:  document.getElementById('hubEditCss').value,
+        js:   document.getElementById('hubEditJs').value,
+      },
+      previewImages: allImages,
+      updatedAt: Date.now()
+    };
+    await hubWaitForFB().then(db => db.ref(`${HUB_FB_PATH}/${p.id}`).update(updates));
+    closeHubEdit();
+    hubShowToast('Project updated!', 'success');
+  } catch(e) {
+    hubShowToast('Save failed — check connection', 'error');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+  }
+};
+
+// ── Upload images during publish ─────────────────────────
+const _origPublish = window.hubPublishProject;
+window.hubPublishProject = async function() {
+  const title   = document.getElementById('hubPublishTitle').value.trim();
+  const desc    = document.getElementById('hubPublishDesc').value.trim();
+  const projKey = document.getElementById('hubPublishProject').value;
+  const author  = document.getElementById('hubPublishAuthor').value.trim() || 'Anonymous';
+  if (!title) { hubShowToast('Please enter a title', 'error'); return; }
+  if (!desc)  { hubShowToast('Please enter a description', 'error'); return; }
+  const tags = [...hubPublishTags];
+  if (!tags.length) { if (projKey) tags.push('html'); }
+  let code = { html: '', css: '', js: '' };
+  if (typeof db !== 'undefined' && db[projKey]) {
+    code = { html: db[projKey].html||'', css: db[projKey].css||'', js: db[projKey].js||'' };
+  }
+  const user = window._fbCurrentUser;
+  const colors = ['#f97316','#3b82f6','#10b981','#8b5cf6','#ec4899','#f59e0b','#22d3ee'];
+  const newProject = {
+    id: 'user-' + Date.now(),
+    title, desc, author, tags, code,
+    emoji: hubPublishEmoji,
+    authorColor: colors[Math.floor(Math.random() * colors.length)],
+    stars: 0, downloads: 0, likes: 0,
+    comments: [],
+    featured: false,
+    publishedAt: Date.now(),
+    ownerUid: user ? user.uid : null,
+    ownerEmail: user ? user.email : null,
+    previewImages: []
+  };
+  const btn = document.getElementById('hubPublishBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing…'; }
+  hubWaitForFB().then(async db => {
+    const ref = db.ref(HUB_FB_PATH).push();
+    newProject.id = ref.key;
+    // Upload images
+    if (hubPublishImageFiles.length) {
+      try {
+        newProject.previewImages = await hubUploadImagesToStorage(hubPublishImageFiles, newProject.id);
+      } catch(e) { console.warn('Image upload failed:', e); }
+    }
+    ref.set(newProject).then(() => {
+      closeHubPublish();
+      hubPublishImageFiles = [];
+      document.getElementById('hubPublishImagePreviews').innerHTML = '';
+      hubSetSort('new');
+      hubShowToast(`"${title}" published to Hub!`, 'success');
+    }).catch(e => {
+      hubShowToast('Publish failed — check connection', 'error');
+      console.error('Hub publish error:', e);
+    }).finally(() => {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-store"></i> Publish to Hub'; }
+    });
+  });
+};
+
+// ── Close edit on backdrop click ─────────────────────────
+document.getElementById('hubEditOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeHubEdit();
+});
 
 // Close detail on backdrop click
 document.getElementById('hubDetailOverlay').addEventListener('click', function(e) {
