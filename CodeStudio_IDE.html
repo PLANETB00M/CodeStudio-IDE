@@ -18415,28 +18415,37 @@ function hubFileToDataURL(file) {
   });
 }
 
-async function hubUploadImagesToStorage(files, projectId) {
-  if (!window._fbStorage || !files.length) return [];
-  const urls = [];
-  for (let i = 0; i < files.length; i++) {
-    const f = files[i];
-    const ext = f.name.split('.').pop();
-    const ref = window._fbStorage.ref(`hub_previews/${projectId}/${Date.now()}_${i}.${ext}`);
-    await ref.put(f);
-    const url = await ref.getDownloadURL();
-    urls.push(url);
-  }
-  return urls;
+// Compress image to base64 JPEG under ~200KB
+async function hubCompressImage(file, maxW=800, quality=0.72) {
+  return new Promise(res => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      res(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = url;
+  });
 }
 
-async function hubDeleteStorageImages(urls) {
-  if (!window._fbStorage || !urls || !urls.length) return;
-  for (const url of urls) {
-    try {
-      await window._fbStorage.refFromURL(url).delete();
-    } catch(e) {}
+// Convert files to compressed base64 — no Storage needed
+async function hubUploadImagesToStorage(files) {
+  if (!files.length) return [];
+  const result = [];
+  for (const f of files) {
+    const b64 = await hubCompressImage(f);
+    result.push(b64);
   }
+  return result;
 }
+
+// No-op: base64 images live in DB, nothing to delete from Storage
+async function hubDeleteStorageImages(urls) {}
 
 // ── Publish image preview handlers ──────────────────────
 window.hubHandlePublishImages = async function(input) {
@@ -18561,7 +18570,7 @@ window.hubSaveEdit = async function() {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
   try {
     // Upload new images
-    const newUrls = await hubUploadImagesToStorage(hubEditImageFiles, p.id);
+    const newUrls = await hubUploadImagesToStorage(hubEditImageFiles);
     const allImages = [...hubEditExistingImages, ...newUrls];
     // Find removed existing images and delete from storage
     const removed = (p.previewImages || []).filter(u => !hubEditExistingImages.includes(u));
@@ -18627,7 +18636,7 @@ window.hubPublishProject = async function() {
     // Upload images
     if (hubPublishImageFiles.length) {
       try {
-        newProject.previewImages = await hubUploadImagesToStorage(hubPublishImageFiles, newProject.id);
+        newProject.previewImages = await hubUploadImagesToStorage(hubPublishImageFiles);
       } catch(e) { console.warn('Image upload failed:', e); }
     }
     ref.set(newProject).then(() => {
