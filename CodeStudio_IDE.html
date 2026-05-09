@@ -2765,6 +2765,12 @@
                         hubUpdateOwnerControls(hubCurrentProject);
                     }
                 }
+                // Show/hide Admin Panel button
+                const adminBtn = document.getElementById('hubAdminPanelBtn');
+                if (adminBtn) {
+                    const isAdmin = fbUser && typeof HUB_ADMIN_UIDS !== 'undefined' && HUB_ADMIN_UIDS.has(fbUser.uid);
+                    adminBtn.style.display = isAdmin ? 'flex' : 'none';
+                }
             });
 
             window._fbReady = true;
@@ -17915,6 +17921,7 @@ var _markedPatchInterval = setInterval(function() {
       <input class="hub-search" id="hubSearchInput" placeholder="Search projects, authors, tags…" oninput="hubFilterProjects()">
     </div>
     <div class="hub-topbar-actions">
+      <button id="hubAdminPanelBtn" onclick="hubOpenAdminPanel()" style="display:none;background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;color:#fff;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;display:none;align-items:center;gap:6px;font-family:'Outfit',sans-serif;letter-spacing:0.3px;"><i class="fas fa-shield-halved"></i> Admin Panel</button>
       <button class="hub-btn hub-btn-primary" onclick="openHubPublish()"><i class="fas fa-upload"></i> Publish Project</button>
       <button class="hub-close-btn" onclick="closeHub()" title="Back to IDE"><i class="fas fa-times"></i></button>
     </div>
@@ -17973,8 +17980,10 @@ var _markedPatchInterval = setInterval(function() {
         <div id="hubDetailMeta" style="font-size:11px;color:var(--text-dim);margin-top:3px;"></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
+        <span id="hubAdminBadge" style="display:none;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:6px;letter-spacing:1px;text-transform:uppercase;align-items:center;gap:4px;"><i class="fas fa-shield-halved"></i> ADMIN</span>
         <button class="hub-btn" id="hubEditBtn" onclick="hubOpenEdit()" style="display:none;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;"><i class="fas fa-pen"></i> Edit</button>
         <button class="hub-btn" id="hubDeleteBtn" onclick="hubDeleteProject()" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;"><i class="fas fa-trash"></i> Delete</button>
+        <button class="hub-btn" id="hubAdminDeleteBtn" onclick="hubAdminDeleteProject()" style="display:none;background:rgba(239,68,68,0.18);border:1.5px solid rgba(239,68,68,0.5);color:#f87171;font-weight:800;" title="Admin: Force delete this project"><i class="fas fa-shield-halved"></i> Force Delete</button>
         <button class="hub-btn" id="hubReportBtn" onclick="hubOpenReport()" style="display:none;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;" title="Report this project"><i class="fas fa-flag"></i> Report</button>
         <button class="hub-btn hub-btn-primary" id="hubOpenIdeBtn" onclick="hubOpenInIDE()"><i class="fas fa-code"></i> Open in IDE</button>
         <button class="hub-close-btn" onclick="closeHubDetail()"><i class="fas fa-times"></i></button>
@@ -18045,6 +18054,52 @@ var _markedPatchInterval = setInterval(function() {
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN PANEL OVERLAY ══ -->
+<div id="hubAdminOverlay" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--toolbar,#18181b);border:1.5px solid rgba(239,68,68,0.35);border-radius:20px;width:min(900px,96vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.7);">
+    <!-- Header -->
+    <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0;">
+      <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#7f1d1d);display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;flex-shrink:0;"><i class="fas fa-shield-halved"></i></div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:900;color:var(--text);">Admin Control Panel</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Manage all Hub projects &amp; reports</div>
+      </div>
+      <button onclick="hubOpenAdminPanel()" style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;margin-right:6px;"><i class="fas fa-rotate-right"></i> Refresh</button>
+      <button class="hub-close-btn" onclick="closeHubAdminPanel()"><i class="fas fa-times"></i></button>
+    </div>
+    <!-- Stats Bar -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div style="flex:1;padding:12px 20px;border-right:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Total Projects</div>
+        <div id="hubAdminStatProjects" style="font-size:22px;font-weight:900;color:var(--accent);margin-top:2px;">—</div>
+      </div>
+      <div style="flex:1;padding:12px 20px;border-right:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-weight:700;">Reported Projects</div>
+        <div id="hubAdminStatReported" style="font-size:22px;font-weight:900;color:#f59e0b;margin-top:2px;">—</div>
+      </div>
+      <div style="flex:1;padding:12px 20px;">
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;font-weight:700;">High Risk (4+ Reports)</div>
+        <div id="hubAdminStatHighRisk" style="font-size:22px;font-weight:900;color:#ef4444;margin-top:2px;">—</div>
+      </div>
+    </div>
+    <!-- Table -->
+    <div style="overflow-y:auto;flex:1;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:rgba(0,0,0,0.3);position:sticky;top:0;z-index:1;">
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Project</th>
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Author</th>
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Date</th>
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Reports</th>
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="hubAdminTableBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -18240,6 +18295,16 @@ var _markedPatchInterval = setInterval(function() {
 // ── Firebase Hub Storage ────────────────────────────────
 const HUB_RATINGS_KEY = 'cs_hub_ratings';
 const HUB_FB_PATH = 'hub/projects';
+
+// ── Admin UIDs ───────────────────────────────────────────
+const HUB_ADMIN_UIDS = new Set([
+  'f2Y4Wr1FzXXm4FFuFQ0Dex9cexW2',
+  'L0K9MKYxCtWcW76m8nwLzMVSNDY2'
+]);
+function hubIsAdmin() {
+  const user = window._fbCurrentUser;
+  return !!(user && HUB_ADMIN_UIDS.has(user.uid));
+}
 const SEED_PROJECTS = []; // no seed data — only real community projects
 
 // ── State ───────────────────────────────────────────────
@@ -18913,18 +18978,151 @@ function hubIsOwner(p) {
   return p.ownerUid === user.uid;
 }
 
-// ── Show owner controls in detail ───────────────────────
+// ── Show owner / admin controls in detail ────────────────
 function hubUpdateOwnerControls(p) {
   const isOwner = hubIsOwner(p);
-  const user = window._fbCurrentUser;
+  const isAdmin = hubIsAdmin();
+  const user    = window._fbCurrentUser;
+
+  // Owner buttons
   document.getElementById('hubEditBtn').style.display   = isOwner ? 'flex' : 'none';
   document.getElementById('hubDeleteBtn').style.display = isOwner ? 'flex' : 'none';
-  // Show Report btn only to logged-in non-owners
+
+  // Admin badge + Force Delete (shown only when NOT the owner, so both don't pile up)
+  const adminBadge = document.getElementById('hubAdminBadge');
+  const adminDelBtn = document.getElementById('hubAdminDeleteBtn');
+  if (adminBadge)  adminBadge.style.display  = isAdmin ? 'flex' : 'none';
+  if (adminDelBtn) adminDelBtn.style.display = (isAdmin && !isOwner) ? 'flex' : 'none';
+
+  // Report btn — only for logged-in non-owners who aren't admin
   const reportBtn = document.getElementById('hubReportBtn');
-  if (reportBtn) reportBtn.style.display = (!isOwner && user) ? 'flex' : 'none';
+  if (reportBtn) reportBtn.style.display = (!isOwner && !isAdmin && user) ? 'flex' : 'none';
 }
 
-// ── Delete project ───────────────────────────────────────
+// ── Admin: Force delete any project ─────────────────────
+window.hubAdminDeleteProject = async function() {
+  if (!hubIsAdmin()) return;
+  const p = hubCurrentProject;
+  if (!p) return;
+  if (!confirm(`[ADMIN] Force delete "${p.title}" by ${p.author}?\nThis cannot be undone.`)) return;
+  try {
+    if (p.previewImages && p.previewImages.length) await hubDeleteStorageImages(p.previewImages);
+    const db = await hubWaitForFB();
+    await db.ref(`${HUB_FB_PATH}/${p.id}`).remove();
+    // Clean up any reports for this project
+    await db.ref(`${HUB_REPORTS_PATH}/${p.id}`).remove();
+    closeHubDetail();
+    hubShowToast(`[Admin] "${p.title}" deleted`, 'success');
+  } catch(e) {
+    hubShowToast('Admin delete failed', 'error');
+    console.error(e);
+  }
+};
+
+// ── Admin Panel ──────────────────────────────────────────
+window.hubOpenAdminPanel = async function() {
+  if (!hubIsAdmin()) return;
+  const overlay = document.getElementById('hubAdminOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  const tbody = document.getElementById('hubAdminTableBody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px;"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
+
+  try {
+    const db = await hubWaitForFB();
+    // Load projects
+    const projSnap = await db.ref(HUB_FB_PATH).once('value');
+    const projects = hubSnapToArray(projSnap);
+    // Load reports
+    const repSnap  = await db.ref(HUB_REPORTS_PATH).once('value');
+    const reportsMap = repSnap.val() || {};
+
+    if (!projects.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px;">No projects found</td></tr>';
+      document.getElementById('hubAdminStatProjects').textContent  = '0';
+      document.getElementById('hubAdminStatReported').textContent  = '0';
+      document.getElementById('hubAdminStatHighRisk').textContent  = '0';
+      return;
+    }
+
+    // Update stats
+    const reportedCount  = projects.filter(p => Object.keys(reportsMap[p.id]||{}).length > 0).length;
+    const highRiskCount  = projects.filter(p => Object.keys(reportsMap[p.id]||{}).length >= 4).length;
+    document.getElementById('hubAdminStatProjects').textContent  = projects.length;
+    document.getElementById('hubAdminStatReported').textContent  = reportedCount;
+    document.getElementById('hubAdminStatHighRisk').textContent  = highRiskCount;
+
+    // Sort by report count desc
+    projects.sort((a,b) => Object.keys(reportsMap[b.id]||{}).length - Object.keys(reportsMap[a.id]||{}).length);
+
+    tbody.innerHTML = projects.map(p => {
+      const repCount = Object.keys(reportsMap[p.id] || {}).length;
+      const repColor = repCount >= 4 ? '#ef4444' : repCount >= 2 ? '#f59e0b' : 'var(--text-dim)';
+      const date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString() : '—';
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 12px;font-size:12px;color:var(--text);font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.title}">${p.title}</td>
+        <td style="padding:10px 12px;font-size:11px;color:var(--text-dim);">${p.author}</td>
+        <td style="padding:10px 12px;font-size:11px;color:var(--text-dim);">${date}</td>
+        <td style="padding:10px 12px;font-size:12px;font-weight:900;color:${repColor};">${repCount}/5</td>
+        <td style="padding:10px 12px;">
+          <div style="display:flex;gap:6px;">
+            <button onclick="hubAdminPanelDelete('${p.id}','${p.title.replace(/'/g,"\\'")}',this)" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:4px 10px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;"><i class="fas fa-trash"></i> Delete</button>
+            <button onclick="hubAdminClearReports('${p.id}',this)" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;padding:4px 10px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;"><i class="fas fa-rotate-left"></i> Clear Reports</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#f87171;font-size:12px;">Failed to load data</td></tr>';
+    console.error(e);
+  }
+};
+
+window.hubAdminPanelDelete = async function(id, title, btn) {
+  if (!hubIsAdmin()) return;
+  if (!confirm(`[ADMIN] Delete "${title}"?`)) return;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const db = await hubWaitForFB();
+    // Get project for images
+    const snap = await db.ref(`${HUB_FB_PATH}/${id}`).once('value');
+    const p = snap.val();
+    if (p && p.previewImages && p.previewImages.length) await hubDeleteStorageImages(p.previewImages);
+    await db.ref(`${HUB_FB_PATH}/${id}`).remove();
+    await db.ref(`${HUB_REPORTS_PATH}/${id}`).remove();
+    btn.closest('tr').remove();
+    hubShowToast(`"${title}" deleted`, 'success');
+  } catch(e) {
+    hubShowToast('Delete failed', 'error');
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+  }
+};
+
+window.hubAdminClearReports = async function(id, btn) {
+  if (!hubIsAdmin()) return;
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const db = await hubWaitForFB();
+    await db.ref(`${HUB_REPORTS_PATH}/${id}`).remove();
+    // Reset the report count cell in same row
+    const row = btn.closest('tr');
+    const countCell = row.cells[3];
+    countCell.textContent = '0/5';
+    countCell.style.color = 'var(--text-dim)';
+    btn.innerHTML = '<i class="fas fa-check"></i> Cleared';
+    setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate-left"></i> Clear Reports'; }, 1500);
+    hubShowToast('Reports cleared', 'success');
+  } catch(e) {
+    hubShowToast('Failed to clear reports', 'error');
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate-left"></i> Clear Reports';
+  }
+};
+
+window.closeHubAdminPanel = function() {
+  document.getElementById('hubAdminOverlay').style.display = 'none';
+};
+
+
 window.hubDeleteProject = async function() {
   const p = hubCurrentProject;
   if (!p || !hubIsOwner(p)) return;
