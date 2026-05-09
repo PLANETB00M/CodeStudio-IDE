@@ -17975,6 +17975,7 @@ var _markedPatchInterval = setInterval(function() {
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="hub-btn" id="hubEditBtn" onclick="hubOpenEdit()" style="display:none;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;"><i class="fas fa-pen"></i> Edit</button>
         <button class="hub-btn" id="hubDeleteBtn" onclick="hubDeleteProject()" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;"><i class="fas fa-trash"></i> Delete</button>
+        <button class="hub-btn" id="hubReportBtn" onclick="hubOpenReport()" style="display:none;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;" title="Report this project"><i class="fas fa-flag"></i> Report</button>
         <button class="hub-btn hub-btn-primary" id="hubOpenIdeBtn" onclick="hubOpenInIDE()"><i class="fas fa-code"></i> Open in IDE</button>
         <button class="hub-close-btn" onclick="closeHubDetail()"><i class="fas fa-times"></i></button>
       </div>
@@ -18043,6 +18044,72 @@ var _markedPatchInterval = setInterval(function() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HUB REPORT OVERLAY ══ -->
+<div id="hubReportOverlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+  <div style="background:var(--toolbar,#18181b);border:1px solid rgba(245,158,11,0.25);border-radius:20px;width:min(460px,94vw);padding:0;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6);">
+    <!-- Header -->
+    <div style="padding:18px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0;"><i class="fas fa-flag"></i></div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:800;color:var(--text);">Report Project</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Help keep the community safe</div>
+      </div>
+      <button class="hub-close-btn" onclick="closeHubReport()"><i class="fas fa-times"></i></button>
+    </div>
+    <!-- Body -->
+    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+      <!-- Warning info -->
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <i class="fas fa-triangle-exclamation" style="color:#f59e0b;margin-top:1px;font-size:13px;flex-shrink:0;"></i>
+        <span style="font-size:11px;color:var(--text-dim);line-height:1.6;">Projects that receive <b style="color:#fbbf24;">5 or more reports</b> are automatically removed from the Hub.</span>
+      </div>
+      <!-- Report reason -->
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Reason for Report</div>
+        <div style="display:flex;flex-direction:column;gap:7px;" id="hubReportReasons">
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(245,158,11,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+            <input type="radio" name="hubReportReason" value="spam" style="accent-color:#f59e0b;">
+            <div><div style="font-size:12px;font-weight:700;color:var(--text);">Spam or misleading</div><div style="font-size:10px;color:var(--text-dim);">Repetitive, fake, or clickbait content</div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(245,158,11,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+            <input type="radio" name="hubReportReason" value="inappropriate" style="accent-color:#f59e0b;">
+            <div><div style="font-size:12px;font-weight:700;color:var(--text);">Inappropriate content</div><div style="font-size:10px;color:var(--text-dim);">Offensive, adult, or harmful material</div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(245,158,11,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+            <input type="radio" name="hubReportReason" value="malicious" style="accent-color:#f59e0b;">
+            <div><div style="font-size:12px;font-weight:700;color:var(--text);">Malicious code</div><div style="font-size:10px;color:var(--text-dim);">Contains harmful scripts or redirects</div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(245,158,11,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+            <input type="radio" name="hubReportReason" value="copyright" style="accent-color:#f59e0b;">
+            <div><div style="font-size:12px;font-weight:700;color:var(--text);">Copyright violation</div><div style="font-size:10px;color:var(--text-dim);">Stolen work or plagiarism</div></div>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(245,158,11,0.5)'" onmouseout="this.style.borderColor='var(--border)'">
+            <input type="radio" name="hubReportReason" value="other" style="accent-color:#f59e0b;">
+            <div><div style="font-size:12px;font-weight:700;color:var(--text);">Other</div><div style="font-size:10px;color:var(--text-dim);">Describe below</div></div>
+          </label>
+        </div>
+      </div>
+      <!-- Optional note -->
+      <div>
+        <div style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;">Additional details <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></div>
+        <textarea id="hubReportNote" placeholder="Provide more context…" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:10px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;resize:none;line-height:1.55;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <!-- Report count badge -->
+      <div id="hubReportCountWrap" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:9px 14px;display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-chart-bar" style="color:#f87171;font-size:12px;"></i>
+        <span id="hubReportCountText" style="font-size:11px;color:#f87171;font-weight:700;"></span>
+      </div>
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="hub-btn" onclick="closeHubReport()" style="flex:1;justify-content:center;padding:11px;">Cancel</button>
+        <button class="hub-btn" id="hubReportSubmitBtn" onclick="hubSubmitReport()" style="flex:2;justify-content:center;padding:11px;font-size:13px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:#fbbf24;font-weight:700;">
+          <i class="fas fa-flag"></i> Submit Report
+        </button>
       </div>
     </div>
   </div>
@@ -18849,8 +18916,12 @@ function hubIsOwner(p) {
 // ── Show owner controls in detail ───────────────────────
 function hubUpdateOwnerControls(p) {
   const isOwner = hubIsOwner(p);
+  const user = window._fbCurrentUser;
   document.getElementById('hubEditBtn').style.display   = isOwner ? 'flex' : 'none';
   document.getElementById('hubDeleteBtn').style.display = isOwner ? 'flex' : 'none';
+  // Show Report btn only to logged-in non-owners
+  const reportBtn = document.getElementById('hubReportBtn');
+  if (reportBtn) reportBtn.style.display = (!isOwner && user) ? 'flex' : 'none';
 }
 
 // ── Delete project ───────────────────────────────────────
@@ -18872,6 +18943,110 @@ window.hubDeleteProject = async function() {
     console.error(e);
   }
 };
+
+// ── Report System ────────────────────────────────────────
+const HUB_REPORTS_PATH = 'hub/reports';
+
+window.hubOpenReport = async function() {
+  const p = hubCurrentProject;
+  if (!p) return;
+  const user = window._fbCurrentUser;
+  if (!user) { hubShowToast('Sign in to report projects', 'error'); return; }
+
+  // Reset form
+  document.querySelectorAll('input[name="hubReportReason"]').forEach(r => r.checked = false);
+  document.getElementById('hubReportNote').value = '';
+  const submitBtn = document.getElementById('hubReportSubmitBtn');
+  submitBtn.disabled = false;
+  submitBtn.innerHTML = '<i class="fas fa-flag"></i> Submit Report';
+
+  // Check if user already reported
+  try {
+    const db = await hubWaitForFB();
+    const snap = await db.ref(`${HUB_REPORTS_PATH}/${p.id}`).once('value');
+    const reports = snap.val() || {};
+    const reportCount = Object.keys(reports).length;
+    const countWrap = document.getElementById('hubReportCountWrap');
+    const countText = document.getElementById('hubReportCountText');
+
+    if (reports[user.uid]) {
+      countWrap.style.display = 'flex';
+      countText.textContent = `You already reported this project (${reportCount}/5 reports total)`;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-check"></i> Already Reported';
+    } else if (reportCount > 0) {
+      countWrap.style.display = 'flex';
+      countText.textContent = `This project has ${reportCount}/5 report${reportCount > 1 ? 's' : ''} so far`;
+    } else {
+      countWrap.style.display = 'none';
+    }
+  } catch(e) {
+    document.getElementById('hubReportCountWrap').style.display = 'none';
+  }
+
+  document.getElementById('hubReportOverlay').style.display = 'flex';
+};
+
+window.closeHubReport = function() {
+  document.getElementById('hubReportOverlay').style.display = 'none';
+};
+
+window.hubSubmitReport = async function() {
+  const p = hubCurrentProject;
+  if (!p) return;
+  const user = window._fbCurrentUser;
+  if (!user) { hubShowToast('Sign in to report', 'error'); return; }
+
+  const reason = document.querySelector('input[name="hubReportReason"]:checked')?.value;
+  if (!reason) { hubShowToast('Please select a reason', 'error'); return; }
+
+  const note = document.getElementById('hubReportNote').value.trim();
+  const btn  = document.getElementById('hubReportSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
+
+  try {
+    const db = await hubWaitForFB();
+    const reportRef = db.ref(`${HUB_REPORTS_PATH}/${p.id}/${user.uid}`);
+
+    // Write this user's report (keyed by uid — prevents duplicates)
+    await reportRef.set({ reason, note, reportedAt: Date.now(), reporterEmail: user.email || '' });
+
+    // Count total reports for this project
+    const snap = await db.ref(`${HUB_REPORTS_PATH}/${p.id}`).once('value');
+    const reports = snap.val() || {};
+    const reportCount = Object.keys(reports).length;
+
+    closeHubReport();
+
+    if (reportCount >= 5) {
+      // Auto-delete the project
+      try {
+        if (p.previewImages && p.previewImages.length) await hubDeleteStorageImages(p.previewImages);
+        await db.ref(`${HUB_FB_PATH}/${p.id}`).remove();
+        // Clean up reports node too
+        await db.ref(`${HUB_REPORTS_PATH}/${p.id}`).remove();
+        closeHubDetail();
+        hubShowToast('Project removed after 5 reports', 'error');
+      } catch(delErr) {
+        console.error('Auto-delete failed:', delErr);
+        hubShowToast('Report submitted', 'success');
+      }
+    } else {
+      hubShowToast(`Report submitted (${reportCount}/5)`, 'success');
+    }
+  } catch(e) {
+    console.error('Report error:', e);
+    hubShowToast('Report failed — try again', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-flag"></i> Submit Report';
+  }
+};
+
+// Close report overlay on backdrop click
+document.getElementById('hubReportOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeHubReport();
+});
 
 // ── Open Edit overlay ────────────────────────────────────
 window.hubOpenEdit = function() {
