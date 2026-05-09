@@ -1195,38 +1195,196 @@
 
 </style>
     <style>
-        /* --- WHITEBOARD OVERLAY --- */
+        /* ═══════════════════════════════════════════════════════
+           WHITEBOARD — Procreate-style, fully theme-aware
+           Uses only CSS variables so it adapts to every theme
+           ═══════════════════════════════════════════════════════ */
+
+        /* Extra whiteboard-specific tokens derived from theme vars */
+        :root {
+            --wb-bar:        var(--toolbar);
+            --wb-bar-border: var(--border);
+            --wb-btn-hover:  rgba(var(--accent-rgb), 0.10);
+            --wb-btn-active-bg:   var(--accent);
+            --wb-btn-active-text: #ffffff;
+            --wb-sep:        var(--border);
+            --wb-num-color:  var(--text-dim);
+            --wb-canvas:     var(--editor-bg);
+            --wb-swatch-ring: var(--text);
+        }
+        /* Light mode overrides */
+        .light-mode {
+            --wb-bar:        #f8f8fb !important;
+            --wb-bar-border: #e0e0e8 !important;
+            --wb-btn-hover:  rgba(var(--accent-rgb), 0.08) !important;
+            --wb-btn-active-bg:   var(--accent) !important;
+            --wb-canvas:     #ffffff !important;
+            --wb-swatch-ring: #111 !important;
+        }
+
         #whiteboardOverlay {
             position: fixed; inset: 0; z-index: 9500;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.78);
+            backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center;
         }
         #whiteboardOverlay.open { display: flex; }
+
         #whiteboardContainer {
-            background: #1a1a2e; border: 1px solid var(--border); border-radius: 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 22px;
             display: flex; flex-direction: column; overflow: hidden;
-            width: min(92vw, 1100px); height: min(88vh, 700px);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+            width: min(96vw, 1180px);
+            height: min(90vh, 760px);
+            box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+            transition: background var(--trans-speed), border-color var(--trans-speed);
         }
+
+        /* ── Toolbar bar ── */
         #whiteboardHeader {
-            background: var(--toolbar); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 10px; padding: 10px 16px; flex-shrink: 0;
+            background: var(--wb-bar);
+            border-bottom: 1px solid var(--wb-bar-border);
+            display: flex; align-items: center; gap: 5px;
+            padding: 7px 12px; flex-shrink: 0;
+            border-radius: 22px 22px 0 0;
+            transition: background var(--trans-speed), border-color var(--trans-speed);
         }
-        #whiteboardHeader h3 { margin: 0; font-size: 13px; font-weight: 800; flex: 1; }
-        .wb-tool-group { display: flex; align-items: center; gap: 4px; }
-        .wb-tool-sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
+        #whiteboardHeader h3 { display: none; }
+
+        /* ── Tool-group separator ── */
+        .wb-tool-sep {
+            width: 1px; height: 26px;
+            background: var(--wb-sep);
+            margin: 0 3px; flex-shrink: 0;
+            opacity: 0.6;
+        }
+        .wb-tool-group { display: flex; align-items: center; gap: 2px; }
+
+        /* ── Tool buttons ── */
         .wb-btn {
-            width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-            background: var(--bg); color: var(--text-dim); cursor: pointer; font-size: 13px;
-            display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+            width: 34px; height: 34px; border-radius: 9px;
+            border: 1.5px solid transparent;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.13s, color 0.13s, border-color 0.13s, box-shadow 0.13s;
+            flex-shrink: 0;
         }
-        .wb-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .wb-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-        .wb-size-slider { width: 70px; accent-color: var(--accent); cursor: pointer; }
-        #wbColorPicker { width: 32px; height: 32px; border-radius: 8px; border: 2px solid var(--border); padding: 2px; cursor: pointer; background: none; }
+        .wb-btn:hover {
+            background: var(--wb-btn-hover);
+            color: var(--text);
+            border-color: var(--border);
+        }
+        /* If the button defines a --wb-tool-tint, use it when hovered & when idle */
+        .wb-btn[style*="--wb-tool-tint"] { color: var(--wb-tool-tint, var(--text-dim)); }
+        .wb-btn[style*="--wb-tool-tint"]:hover { color: var(--wb-tool-tint, var(--text)); filter: brightness(1.15); }
+        .wb-btn.active {
+            background: var(--wb-btn-active-bg);
+            border-color: var(--wb-btn-active-bg);
+            color: var(--wb-btn-active-text);
+            box-shadow: 0 2px 10px rgba(var(--accent-rgb), 0.35);
+        }
+
+        /* ── Color palette grid 2 × 5 ── */
+        .wb-palette {
+            display: grid;
+            grid-template-columns: repeat(5, 20px);
+            grid-template-rows: repeat(2, 20px);
+            gap: 3px;
+        }
+        .wb-swatch {
+            width: 20px; height: 20px; border-radius: 5px;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            outline: 2px solid transparent;
+            outline-offset: 1px;
+            transition: transform 0.12s, outline-color 0.12s;
+            flex-shrink: 0;
+        }
+        .wb-swatch:hover { transform: scale(1.18); }
+        .wb-swatch.active {
+            outline-color: var(--wb-swatch-ring);
+            transform: scale(1.22);
+            border-color: transparent;
+        }
+
+        /* ── Hidden native color input ── */
+        #wbColorPicker {
+            position: absolute; opacity: 0;
+            width: 1px; height: 1px;
+            pointer-events: none;
+        }
+
+        /* ── Size / opacity readout column ── */
+        .wb-readout {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 2px;
+        }
+        .wb-readout-row {
+            display: flex; align-items: center; gap: 4px;
+        }
+        .wb-readout-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9.5px; font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            line-height: 1;
+        }
+        .wb-readout-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; font-weight: 700;
+            color: var(--text);
+            line-height: 1; min-width: 28px; text-align: right;
+        }
+        .wb-size-slider {
+            width: 58px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* ── Active-color circle ── */
+        #wbColorCircle {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--accent);
+            cursor: pointer; flex-shrink: 0;
+            box-shadow: 0 0 0 2px var(--wb-bar), 0 2px 8px rgba(0,0,0,0.25);
+            transition: background 0.12s, border-color var(--trans-speed), box-shadow var(--trans-speed);
+        }
+        #wbColorCircle:hover { border-color: var(--text); }
+
+        /* ── Star bookmark ── */
+        #wbStarBtn {
+            font-size: 17px; line-height: 1;
+            cursor: pointer; color: var(--text-dim);
+            border: none; background: none;
+            padding: 2px 3px;
+            transition: color 0.15s, transform 0.15s;
+        }
+        #wbStarBtn:hover, #wbStarBtn.starred { color: var(--warning); transform: scale(1.2); }
+
+        /* ── Close button ── */
+        #wbCloseBtn {
+            width: 28px; height: 28px; border-radius: 7px;
+            background: rgba(239,68,68,0.10);
+            border: 1px solid rgba(239,68,68,0.22);
+            color: var(--danger);
+            cursor: pointer; font-size: 11px;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.13s;
+            margin-left: auto; flex-shrink: 0;
+        }
+        #wbCloseBtn:hover { background: rgba(239,68,68,0.22); }
+
+        /* ── Canvas ── */
         #whiteboardCanvas {
-            flex: 1; cursor: crosshair; display: block; background: #0f0f18;
+            flex: 1; display: block;
+            background: var(--wb-canvas);
+            cursor: crosshair;
             touch-action: none;
+            transition: background var(--trans-speed);
         }
         #whiteboardCanvas.eraser-mode { cursor: cell; }
 
@@ -2601,6 +2759,12 @@
             // Listen for auth state changes
             window._fbAuth.onAuthStateChanged(fbUser => {
                 window._fbCurrentUser = fbUser || null;
+                // Re-check owner controls if a Hub detail is currently open
+                if (typeof hubCurrentProject !== 'undefined' && hubCurrentProject) {
+                    if (typeof hubUpdateOwnerControls === 'function') {
+                        hubUpdateOwnerControls(hubCurrentProject);
+                    }
+                }
             });
 
             window._fbReady = true;
@@ -2925,39 +3089,156 @@
     <!-- ===== FOLLOWING BANNER (viewers see this when following host) ===== -->
     <div id="followingBanner"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Following host&nbsp;·&nbsp;<span id="followingHostName">Host</span></div>
 
-    <!-- ===== WHITEBOARD OVERLAY ===== -->
+    <!-- ══════════════════════════════════════════════════════
+         WHITEBOARD — Procreate-style, fully theme-aware
+         ══════════════════════════════════════════════════════ -->
     <div id="whiteboardOverlay">
-        <div id="whiteboardContainer">
-            <div id="whiteboardHeader">
-                <i class="fas fa-chalkboard-teacher" style="color:#a78bfa; font-size:16px;"></i>
-                <h3>Collaborative Whiteboard</h3>
-                <div class="wb-tool-group">
-                    <button class="wb-btn active" id="wbPenBtn" onclick="setWbTool('pen')" title="Pen"><i class="fas fa-pen"></i></button>
-                    <button class="wb-btn" id="wbHighlightBtn" onclick="setWbTool('highlight')" title="Highlighter"><i class="fas fa-highlighter"></i></button>
-                    <button class="wb-btn" id="wbArrowBtn" onclick="setWbTool('arrow')" title="Arrow"><i class="fas fa-long-arrow-alt-right"></i></button>
-                    <button class="wb-btn" id="wbTextBtn" onclick="setWbTool('text')" title="Text"><i class="fas fa-font"></i></button>
-                    <button class="wb-btn" id="wbRectBtn" onclick="setWbTool('rect')" title="Rectangle"><i class="far fa-square"></i></button>
-                    <button class="wb-btn" id="wbCircleBtn" onclick="setWbTool('circle')" title="Circle"><i class="far fa-circle"></i></button>
-                    <button class="wb-btn" id="wbEraserBtn" onclick="setWbTool('eraser')" title="Eraser"><i class="fas fa-eraser"></i></button>
-                </div>
-                <div class="wb-tool-sep"></div>
-                <div class="wb-tool-group" style="gap:8px;">
-                    <input type="color" id="wbColorPicker" value="#a78bfa" title="Color">
-                    <input type="range" class="wb-size-slider" id="wbSizeSlider" min="1" max="40" value="4" title="Brush size">
-                    <span id="wbSizeLabel" style="font-size:11px; color:var(--text-dim); min-width:24px;">4px</span>
-                </div>
-                <div class="wb-tool-sep"></div>
-                <div class="wb-tool-group">
-                    <button class="wb-btn" onclick="wbUndo()" title="Undo"><i class="fas fa-undo"></i></button>
-                    <button class="wb-btn" onclick="clearWhiteboard()" title="Clear All" style="color:#ef4444;"><i class="fas fa-trash"></i></button>
-                </div>
-                <div class="wb-tool-sep"></div>
-                <button class="wb-btn" onclick="closeWhiteboard()" title="Close" style="color:#ef4444; margin-left:4px;"><i class="fas fa-times"></i></button>
-            </div>
-            <canvas id="whiteboardCanvas"></canvas>
-        </div>
-    </div>
+      <div id="whiteboardContainer">
+        <div id="whiteboardHeader">
 
+          <!-- ① Select + Text -->
+          <div class="wb-tool-group">
+            <button class="wb-btn" id="wbSelectBtn" onclick="setWbTool('select')" title="Select (V)">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M3 1l13 9-6 1-3 7z"/></svg>
+            </button>
+            <button class="wb-btn" id="wbTextBtn" onclick="setWbTool('text')" title="Text (T)">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <rect x="2" y="2" width="16" height="16" rx="2.5" stroke-dasharray="3 2"/>
+                <path d="M7 7h6M10 7v6"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="wb-tool-sep"></div>
+
+          <!-- ② Freehand drawing tools -->
+          <div class="wb-tool-group">
+            <button class="wb-btn active" id="wbPenBtn" onclick="setWbTool('pen')" title="Pen (P)" style="--wb-tool-tint:#f87171;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbMarkerBtn" onclick="setWbTool('marker')" title="Marker (M)" style="--wb-tool-tint:#fbbf24;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>
+                <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbHighlightBtn" onclick="setWbTool('highlight')" title="Highlighter (H)" style="--wb-tool-tint:#fde047;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11L4 16l2 5 14-10-8-7z"/>
+                <line x1="15" y1="5" x2="18" y2="8"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbBrushBtn" onclick="setWbTool('brush')" title="Brush (B)" style="--wb-tool-tint:#c084fc;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 20a2 2 0 0 1 0-4c1.6 0 2.6 1 3 2"/>
+                <path d="M7 18C7 9 17 2 21 2c0 4-7 10-7 16"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbPencilBtn" onclick="setWbTool('pencil')" title="Pencil (E)" style="--wb-tool-tint:#94a3b8;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="14 2 18 6 7 17 3 17 3 13 14 2"/>
+                <line x1="3" y1="22" x2="21" y2="22"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbFineBtn" onclick="setWbTool('fine')" title="Fineliner (F)" style="--wb-tool-tint:#60a5fa;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <line x1="12" y1="3" x2="12" y2="21"/>
+                <line x1="7" y1="8" x2="17" y2="8"/>
+                <line x1="8.5" y1="17" x2="15.5" y2="17"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="wb-tool-sep"></div>
+
+          <!-- ③ Shape + eraser tools -->
+          <div class="wb-tool-group">
+            <button class="wb-btn" id="wbArrowBtn" onclick="setWbTool('arrow')" title="Arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbRectBtn" onclick="setWbTool('rect')" title="Rectangle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbCircleBtn" onclick="setWbTool('circle')" title="Circle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"/>
+              </svg>
+            </button>
+            <button class="wb-btn" id="wbEraserBtn" onclick="setWbTool('eraser')" title="Eraser" style="--wb-tool-tint:#fb7185;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 20H7L3 16l11-11 7 7z"/>
+                <line x1="6" y1="17" x2="17" y2="6"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="wb-tool-sep"></div>
+
+          <!-- ④ 2×5 Color palette -->
+          <div class="wb-palette" id="wbPalette">
+            <div class="wb-swatch active" style="background:#1c1c1e;"                              data-color="#1c1c1e" onclick="pickWbSwatch(this)" title="Ink"></div>
+            <div class="wb-swatch"        style="background:#4f46e5;"                              data-color="#4f46e5" onclick="pickWbSwatch(this)" title="Indigo"></div>
+            <div class="wb-swatch"        style="background:#7c3aed;"                              data-color="#7c3aed" onclick="pickWbSwatch(this)" title="Purple"></div>
+            <div class="wb-swatch"        style="background:#71717a;"                              data-color="#71717a" onclick="pickWbSwatch(this)" title="Gray"></div>
+            <div class="wb-swatch"        style="background:#a78bfa;"                              data-color="#a78bfa" onclick="pickWbSwatch(this)" title="Lavender"></div>
+            <div class="wb-swatch"        style="background:#1d4ed8;"                              data-color="#1d4ed8" onclick="pickWbSwatch(this)" title="Blue"></div>
+            <div class="wb-swatch"        style="background:#06b6d4;"                              data-color="#06b6d4" onclick="pickWbSwatch(this)" title="Cyan"></div>
+            <div class="wb-swatch"        style="background:#fbbf24;"                              data-color="#fbbf24" onclick="pickWbSwatch(this)" title="Amber"></div>
+            <div class="wb-swatch"        style="background:#f97316;"                              data-color="#f97316" onclick="pickWbSwatch(this)" title="Orange"></div>
+            <div class="wb-swatch"        style="background:#f1f5f9;border:1.5px solid var(--border);" data-color="#f8fafc" onclick="pickWbSwatch(this)" title="White"></div>
+          </div>
+          <input type="color" id="wbColorPicker" value="#a78bfa" onchange="wbApplyCustomColor(this.value)">
+          <div id="wbColorCircle" onclick="document.getElementById('wbColorPicker').click()" title="Custom color…"></div>
+
+          <div class="wb-tool-sep"></div>
+
+          <!-- ⑤ Size + opacity readout -->
+          <div class="wb-readout">
+            <input type="range" class="wb-size-slider" id="wbSizeSlider" min="1" max="40" value="4" oninput="wbUpdateSize(this.value)" title="Brush size">
+            <div class="wb-readout-row">
+              <span class="wb-readout-label">sz</span>
+              <span class="wb-readout-val" id="wbSizeLabel">4</span>
+              <span class="wb-readout-label" style="margin-left:4px;">op</span>
+              <span class="wb-readout-val" id="wbOpacityLabel">1.0</span>
+            </div>
+          </div>
+
+          <div class="wb-tool-sep"></div>
+
+          <!-- ⑥ Star · Undo · Clear -->
+          <div class="wb-tool-group">
+            <button id="wbStarBtn" onclick="wbToggleStar()" title="Bookmark canvas">★</button>
+            <button class="wb-btn" onclick="wbUndo()" title="Undo (Ctrl+Z)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+              </svg>
+            </button>
+            <button class="wb-btn" onclick="clearWhiteboard()" title="Clear all" style="color:var(--danger);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- ⑦ Close -->
+          <button id="wbCloseBtn" onclick="closeWhiteboard()" title="Close whiteboard (Esc)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+
+          <h3>Collaborative Whiteboard</h3>
+        </div>
+        <canvas id="whiteboardCanvas"></canvas>
+      </div>
+    </div>
     <!-- ===== PAUSE SESSION BANNER (shown to paused collaborators) ===== -->
     <div id="pauseSessionBanner">
         <div class="pause-card">
@@ -3558,7 +3839,7 @@
                     <div style="text-align:center;padding:10px 0 6px;">
                         <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:28px;color:white;margin:0 auto 12px;box-shadow:0 8px 24px rgba(59,130,246,0.35);"><i class="fas fa-layer-group"></i></div>
                         <div style="font-size:20px;font-weight:900;color:var(--text);">CodeStudio</div>
-                        <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Version 956.28.1 — Browser-native IDE</div>
+                        <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Version 989.34.6 — Browser-native IDE</div>
                     </div>
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
                         <div style="font-size:13px;color:var(--text);"><i class="fas fa-user-astronaut" style="color:var(--accent);margin-right:8px;"></i><strong>Developer:</strong> PLANETBOOM</div>
@@ -12353,11 +12634,39 @@ localStorage.removeItem('key');`);
             wbCanvas.addEventListener('pointerup', wbPointerUp);
             wbCanvas.addEventListener('pointerleave', wbPointerUp);
             // Controls
-            document.getElementById('wbColorPicker').addEventListener('input', e => { wbColor = e.target.value; });
+            document.getElementById('wbColorPicker').addEventListener('input', e => { wbColor = e.target.value; wbSyncColorCircle(); });
             document.getElementById('wbSizeSlider').addEventListener('input', e => {
                 wbSize = parseInt(e.target.value);
-                document.getElementById('wbSizeLabel').textContent = wbSize + 'px';
+                document.getElementById('wbSizeLabel').textContent = wbSize;
             });
+            // Init color circle to match default color
+            wbSyncColorCircle();
+        }
+        function wbSyncColorCircle() {
+            const circle = document.getElementById('wbColorCircle');
+            if (circle) circle.style.background = wbColor;
+        }
+        function pickWbSwatch(el) {
+            document.querySelectorAll('.wb-swatch').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+            wbColor = el.dataset.color;
+            document.getElementById('wbColorPicker').value = wbColor;
+            wbSyncColorCircle();
+        }
+        function wbApplyCustomColor(color) {
+            wbColor = color;
+            document.querySelectorAll('.wb-swatch').forEach(s => s.classList.remove('active'));
+            wbSyncColorCircle();
+        }
+        function wbUpdateSize(val) {
+            wbSize = parseInt(val);
+            document.getElementById('wbSizeLabel').textContent = wbSize;
+        }
+        let _wbStarred = false;
+        function wbToggleStar() {
+            _wbStarred = !_wbStarred;
+            const btn = document.getElementById('wbStarBtn');
+            if (btn) { btn.style.color = _wbStarred ? '#f59e0b' : '#ccc'; btn.title = _wbStarred ? 'Bookmarked' : 'Bookmark'; }
         }
         function resizeWbCanvas() {
             if (!wbCanvas || !wbCanvas.parentElement) return; // guard: canvas not yet in DOM
@@ -12375,6 +12684,12 @@ localStorage.removeItem('key');`);
             const btn = document.getElementById('wb' + tool.charAt(0).toUpperCase() + tool.slice(1) + 'Btn');
             if (btn) btn.classList.add('active');
             wbCanvas.classList.toggle('eraser-mode', tool === 'eraser');
+            // Map new tool names to canvas behaviour
+            if (tool === 'marker')  { wbTool = 'marker'; }
+            if (tool === 'brush')   { wbTool = 'brush'; }
+            if (tool === 'pencil')  { wbTool = 'pencil'; }
+            if (tool === 'fine')    { wbTool = 'fine'; }
+            if (tool === 'select')  { wbTool = 'pen'; } // fallback to pen for select
         }
         function wbPointerDown(e) {
             wbIsDrawing = true;
@@ -12382,7 +12697,7 @@ localStorage.removeItem('key');`);
             const r = wbCanvas.getBoundingClientRect();
             wbStartX = e.clientX - r.left;
             wbStartY = e.clientY - r.top;
-            if (['pen','eraser','highlight'].includes(wbTool)) {
+            if (['pen','eraser','highlight','marker','brush','pencil','fine'].includes(wbTool)) {
                 wbCtx.beginPath();
                 wbCtx.moveTo(wbStartX, wbStartY);
             } else {
@@ -12398,7 +12713,7 @@ localStorage.removeItem('key');`);
             const fromX = wbStartX;
             const fromY = wbStartY;
             wbApplyTool(wbTool, fromX, fromY, x, y, wbColor, wbSize, false);
-            if (['pen','eraser','highlight'].includes(wbTool)) {
+            if (['pen','eraser','highlight','marker','brush','pencil','fine'].includes(wbTool)) {
                 wbStartX = x; wbStartY = y;
             }
             // Broadcast using the captured FROM point so remote sees the correct segment
@@ -12433,6 +12748,34 @@ localStorage.removeItem('key');`);
             }
             ctx.fillStyle = color;
             if (tool === 'pen' || tool === 'eraser' || tool === 'highlight') {
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+            } else if (tool === 'marker') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 0.55;
+                ctx.lineWidth = size * 2.5;
+                ctx.strokeStyle = color;
+                ctx.lineCap = 'square';
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+            } else if (tool === 'brush') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 0.75;
+                ctx.lineWidth = size * 1.8;
+                ctx.strokeStyle = color;
+                ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+            } else if (tool === 'pencil') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 0.6;
+                ctx.lineWidth = Math.max(1, size * 0.6);
+                ctx.strokeStyle = color;
+                ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+            } else if (tool === 'fine') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1;
+                ctx.lineWidth = Math.max(0.5, size * 0.35);
+                ctx.strokeStyle = color;
+                ctx.lineCap = 'round';
                 ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
             } else if (tool === 'arrow' && final) {
                 ctx.restore();
