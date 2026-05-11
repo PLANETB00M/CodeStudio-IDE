@@ -18476,7 +18476,26 @@ var _markedPatchInterval = setInterval(function() {
       <!-- Author name -->
       <div>
         <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Your Name</label>
-        <input id="hubPublishAuthor" type="text" placeholder="Anonymous" maxlength="30" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        <div style="position:relative;">
+          <input id="hubPublishAuthor" type="text" placeholder="Anonymous" maxlength="30" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:12px;font-family:'Outfit',sans-serif;outline:none;transition:border-color 0.2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <div id="hubAuthorLockedBadge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--text-dim);pointer-events:none;">
+            <i class="fas fa-lock" style="font-size:9px;color:var(--accent);"></i><span id="hubAuthorLockedName"></span>
+          </div>
+        </div>
+        <div id="hubAuthorLockedNote" style="display:none;font-size:10px;color:var(--text-dim);margin-top:4px;"><i class="fas fa-info-circle"></i> اسمك مرتبط بحسابك ولا يمكن تغييره</div>
+      </div>
+      <!-- Cover Image -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Cover Image <span style="color:var(--text-dim);font-weight:400;">(optional — shown on card)</span></label>
+        <div id="hubPublishCoverPreview" style="display:none;position:relative;width:100%;height:100px;border-radius:9px;overflow:hidden;margin-bottom:8px;border:1px solid var(--border);">
+          <img id="hubPublishCoverImg" style="width:100%;height:100%;object-fit:cover;" alt="">
+          <button onclick="hubRemovePublishCover()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><i class="fas fa-times"></i></button>
+        </div>
+        <label id="hubPublishCoverLabel" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg);border:1px dashed var(--border);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--text-dim);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <i class="fas fa-image" style="color:#f59e0b;font-size:14px;"></i>
+          <span>اختر صورة غلاف للمشروع</span>
+          <input type="file" id="hubPublishCoverInput" accept="image/*" style="display:none;" onchange="hubHandlePublishCover(this)">
+        </label>
       </div>
       <!-- Preview Images -->
       <div>
@@ -18535,6 +18554,19 @@ var _markedPatchInterval = setInterval(function() {
           <i class="fas fa-image" style="color:var(--accent);font-size:14px;"></i>
           <span>Add more screenshots</span>
           <input type="file" id="hubEditImageInput" accept="image/*" multiple style="display:none;" onchange="hubHandleEditImages(this)">
+        </label>
+      </div>
+      <!-- Cover Image -->
+      <div>
+        <label style="font-size:10px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Cover Image <span style="color:var(--text-dim);font-weight:400;">(shown on card)</span></label>
+        <div id="hubEditCoverPreview" style="display:none;position:relative;width:100%;height:100px;border-radius:9px;overflow:hidden;margin-bottom:8px;border:1px solid var(--border);">
+          <img id="hubEditCoverImg" style="width:100%;height:100%;object-fit:cover;" alt="">
+          <button onclick="hubRemoveEditCover()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.7);border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><i class="fas fa-times"></i></button>
+        </div>
+        <label id="hubEditCoverLabel" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg);border:1px dashed var(--border);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--text-dim);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <i class="fas fa-image" style="color:#f59e0b;font-size:14px;"></i>
+          <span>اختر صورة غلاف للمشروع</span>
+          <input type="file" id="hubEditCoverInput" accept="image/*" style="display:none;" onchange="hubHandleEditCover(this)">
         </label>
       </div>
       <div style="display:flex;gap:10px;">
@@ -18816,7 +18848,7 @@ function hubTagIcon(tags, size) {
 function hubCardHTML(p) {
   const tagHTML = (p.tags || []).slice(0,3).map(t => `<span class="hub-card-tag tag-${t}">${t}</span>`).join('');
   const starsDisp = Number(p.stars).toFixed(1);
-  const firstImg = (p.previewImages && p.previewImages[0]) || null;
+  const firstImg = p.coverImage || (p.previewImages && p.previewImages[0]) || null;
   const previewContent = firstImg
     ? `<img src="${firstImg}" style="width:100%;height:100%;object-fit:cover;border-radius:0;">`
     : hubTagIcon(p.tags, 36);
@@ -18833,7 +18865,10 @@ function hubCardHTML(p) {
         <div class="hub-card-tags">${tagHTML}</div>
         <div class="hub-card-footer">
           <div class="hub-card-author">
-            <div class="hub-card-avatar" style="background:${p.authorColor||'#3b82f6'};">${(p.author||'?')[0].toUpperCase()}</div>
+            ${p.authorPhotoURL
+              ? `<div class="hub-card-avatar" style="background:transparent;overflow:hidden;padding:0;"><img src="${p.authorPhotoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="" onerror="this.parentNode.style.background='${p.authorColor||'#3b82f6'}';this.parentNode.textContent='${(p.author||'?')[0].toUpperCase()}';"></div>`
+              : `<div class="hub-card-avatar" style="background:${p.authorColor||'#3b82f6'};">${(p.author||'?')[0].toUpperCase()}</div>`
+            }
             <div class="hub-card-author-name">${p.author||'Anonymous'}</div>
           </div>
           <div class="hub-card-stats">
@@ -19104,10 +19139,38 @@ window.hubOpenInIDE = function() {
 window.openHubPublish = function() {
   hubPublishTags = [];
   hubPublishEmoji = '🚀';
+  hubPublishCoverFile = null;
   document.getElementById('hubPublishTitle').value = '';
   document.getElementById('hubPublishDesc').value = '';
-  document.getElementById('hubPublishAuthor').value =
-    (typeof myCollabName !== 'undefined' && myCollabName) || '';
+  document.getElementById('hubPublishCoverPreview').style.display = 'none';
+  document.getElementById('hubPublishCoverLabel').style.display = 'flex';
+
+  const user = window._fbCurrentUser;
+  const authorInput = document.getElementById('hubPublishAuthor');
+  const lockedBadge = document.getElementById('hubAuthorLockedBadge');
+  const lockedNote  = document.getElementById('hubAuthorLockedNote');
+  const lockedName  = document.getElementById('hubAuthorLockedName');
+
+  if (user) {
+    // Logged in: force author from account, lock the field
+    const displayName = user.displayName || user.email?.split('@')[0] || 'Anonymous';
+    authorInput.value = displayName;
+    authorInput.readOnly = true;
+    authorInput.style.opacity = '0.6';
+    authorInput.style.cursor = 'not-allowed';
+    authorInput.style.paddingRight = '120px';
+    if (lockedBadge) { lockedBadge.style.display = 'flex'; if (lockedName) lockedName.textContent = displayName; }
+    if (lockedNote)  { lockedNote.style.display = 'block'; }
+  } else {
+    // Guest: allow free name entry
+    authorInput.value = (typeof myCollabName !== 'undefined' && myCollabName) || '';
+    authorInput.readOnly = false;
+    authorInput.style.opacity = '';
+    authorInput.style.cursor = '';
+    authorInput.style.paddingRight = '';
+    if (lockedBadge) lockedBadge.style.display = 'none';
+    if (lockedNote)  lockedNote.style.display = 'none';
+  }
 
   // Reset tag buttons
   document.querySelectorAll('#hubTagPicker .hub-tag-filter').forEach(b => b.classList.remove('active'));
@@ -19202,8 +19265,60 @@ setTimeout(() => {
 
 // ── Image Helpers ───────────────────────────────────────
 let hubPublishImageFiles = [];
+let hubPublishCoverFile  = null;
 let hubEditImageFiles    = [];
+let hubEditCoverFile     = null;
 let hubEditExistingImages = []; // URLs already saved
+
+// Cover image handlers (publish)
+window.hubHandlePublishCover = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  hubPublishCoverFile = file;
+  const url = await hubFileToDataURL(file);
+  const img = document.getElementById('hubPublishCoverImg');
+  const prev = document.getElementById('hubPublishCoverPreview');
+  const lbl  = document.getElementById('hubPublishCoverLabel');
+  if (img) img.src = url;
+  if (prev) prev.style.display = 'block';
+  if (lbl)  lbl.style.display  = 'none';
+  input.value = '';
+};
+window.hubRemovePublishCover = function() {
+  hubPublishCoverFile = null;
+  const img = document.getElementById('hubPublishCoverImg');
+  const prev = document.getElementById('hubPublishCoverPreview');
+  const lbl  = document.getElementById('hubPublishCoverLabel');
+  if (img) img.src = '';
+  if (prev) prev.style.display = 'none';
+  if (lbl)  lbl.style.display  = 'flex';
+};
+
+// Cover image handlers (edit)
+window.hubHandleEditCover = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  hubEditCoverFile = file;
+  const url = await hubFileToDataURL(file);
+  const img = document.getElementById('hubEditCoverImg');
+  const prev = document.getElementById('hubEditCoverPreview');
+  const lbl  = document.getElementById('hubEditCoverLabel');
+  if (img) img.src = url;
+  if (prev) prev.style.display = 'block';
+  if (lbl)  lbl.style.display  = 'none';
+  input.value = '';
+};
+window.hubRemoveEditCover = function() {
+  hubEditCoverFile = null;
+  const p = hubCurrentProject;
+  if (p) p._removeCover = true;
+  const img = document.getElementById('hubEditCoverImg');
+  const prev = document.getElementById('hubEditCoverPreview');
+  const lbl  = document.getElementById('hubEditCoverLabel');
+  if (img) img.src = '';
+  if (prev) prev.style.display = 'none';
+  if (lbl)  lbl.style.display  = 'flex';
+};
 
 function hubFileToDataURL(file) {
   return new Promise((res, rej) => {
@@ -19580,7 +19695,22 @@ window.hubOpenEdit = function() {
   document.getElementById('hubEditCss').value   = (p.code && p.code.css)  || '';
   document.getElementById('hubEditJs').value    = (p.code && p.code.js)   || '';
   hubEditImageFiles     = [];
+  hubEditCoverFile      = null;
+  if (p) p._removeCover = false;
   hubEditExistingImages = [...(p.previewImages || [])];
+  // Pre-fill cover image
+  const editCoverPrev  = document.getElementById('hubEditCoverPreview');
+  const editCoverImg   = document.getElementById('hubEditCoverImg');
+  const editCoverLabel = document.getElementById('hubEditCoverLabel');
+  if (p.coverImage) {
+    if (editCoverImg)  editCoverImg.src = p.coverImage;
+    if (editCoverPrev) editCoverPrev.style.display = 'block';
+    if (editCoverLabel) editCoverLabel.style.display = 'none';
+  } else {
+    if (editCoverImg)  editCoverImg.src = '';
+    if (editCoverPrev) editCoverPrev.style.display = 'none';
+    if (editCoverLabel) editCoverLabel.style.display = 'flex';
+  }
   // Render existing images
   const container = document.getElementById('hubEditImagePreviews');
   container.innerHTML = '';
@@ -19615,6 +19745,18 @@ window.hubSaveEdit = async function() {
     // Find removed existing images and delete from storage
     const removed = (p.previewImages || []).filter(u => !hubEditExistingImages.includes(u));
     if (removed.length) await hubDeleteStorageImages(removed);
+    // Handle cover image
+    let coverImage = p.coverImage || null;
+    if (hubEditCoverFile) {
+      try {
+        const coverUrls = await hubUploadImagesToStorage([hubEditCoverFile]);
+        if (p.coverImage) await hubDeleteStorageImages([p.coverImage]);
+        coverImage = coverUrls[0] || null;
+      } catch(e) { console.warn('Cover upload failed:', e); }
+    } else if (p._removeCover) {
+      if (p.coverImage) await hubDeleteStorageImages([p.coverImage]).catch(()=>{});
+      coverImage = null;
+    }
     const updates = {
       title,
       desc,
@@ -19624,6 +19766,7 @@ window.hubSaveEdit = async function() {
         js:   document.getElementById('hubEditJs').value,
       },
       previewImages: allImages,
+      coverImage,
       updatedAt: Date.now()
     };
     await hubWaitForFB().then(db => db.ref(`${HUB_FB_PATH}/${p.id}`).update(updates));
@@ -19655,25 +19798,38 @@ window.hubPublishProject = async function() {
   }
   const user = window._fbCurrentUser;
   const colors = ['#f97316','#3b82f6','#10b981','#8b5cf6','#ec4899','#f59e0b','#22d3ee'];
+  // If user is logged in, force author name from their account (can't be spoofed)
+  const finalAuthor = user
+    ? (user.displayName || user.email?.split('@')[0] || author || 'Anonymous')
+    : (author || 'Anonymous');
   const newProject = {
     id: 'user-' + Date.now(),
-    title, desc, author, tags, code,
+    title, desc, author: finalAuthor, tags, code,
     emoji: hubPublishEmoji,
     authorColor: colors[Math.floor(Math.random() * colors.length)],
+    authorPhotoURL: (user && user.photoURL) ? user.photoURL : null,
     stars: 0, downloads: 0, likes: 0,
     comments: [],
     featured: false,
     publishedAt: Date.now(),
     ownerUid: user ? user.uid : null,
     ownerEmail: user ? user.email : null,
-    previewImages: []
+    previewImages: [],
+    coverImage: null
   };
   const btn = document.getElementById('hubPublishBtn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing…'; }
   hubWaitForFB().then(async db => {
     const ref = db.ref(HUB_FB_PATH).push();
     newProject.id = ref.key;
-    // Upload images
+    // Upload cover image
+    if (hubPublishCoverFile) {
+      try {
+        const coverUrls = await hubUploadImagesToStorage([hubPublishCoverFile]);
+        newProject.coverImage = coverUrls[0] || null;
+      } catch(e) { console.warn('Cover upload failed:', e); }
+    }
+    // Upload preview images
     if (hubPublishImageFiles.length) {
       try {
         newProject.previewImages = await hubUploadImagesToStorage(hubPublishImageFiles);
@@ -19682,7 +19838,10 @@ window.hubPublishProject = async function() {
     ref.set(newProject).then(() => {
       closeHubPublish();
       hubPublishImageFiles = [];
+      hubPublishCoverFile  = null;
       document.getElementById('hubPublishImagePreviews').innerHTML = '';
+      document.getElementById('hubPublishCoverPreview').style.display = 'none';
+      document.getElementById('hubPublishCoverLabel').style.display = 'flex';
       hubSetSort('new');
       hubShowToast(`"${title}" published to Hub!`, 'success');
     }).catch(e => {
