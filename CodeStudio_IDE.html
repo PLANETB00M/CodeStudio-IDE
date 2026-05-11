@@ -1316,11 +1316,11 @@
         }
         .wb-pen-3d:hover {
             transform: translateY(-10px) rotate(-5deg);
-            filter: drop-shadow(0 14px 18px rgba(0,0,0,0.85));
+            filter: drop-shadow(0 6px 8px rgba(0,0,0,0.6));
         }
         .wb-pen-3d.active {
             transform: translateY(-20px) rotate(-3deg) scale(1.04);
-            filter: drop-shadow(0 22px 30px rgba(0,0,0,0.95));
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.7));
         }
         /* Cylindrical body */
         .wb-pen-body {
@@ -3324,11 +3324,42 @@
               <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:3px;height:9px;background:linear-gradient(to right,#0a0a10,#3040a0,#0a0a10);border-radius:1px 1px 50% 50%;"></div>
             </div>
 
+            <!-- LASER PEN: sleek red presentation laser -->
+            <div class="wb-pen-3d" id="wbLaserBtn" onclick="setWbTool('laser');wbPenRackActivate(this)" title="Laser Pointer (L)" style="width:13px;height:80px;">
+              <!-- tail cap -->
+              <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:9px;height:7px;border-radius:50% 50% 1px 1px;background:linear-gradient(to right,#2a2a2a,#555,#888,#555,#2a2a2a);box-shadow:inset 0 1px 2px rgba(255,255,255,0.2);"></div>
+              <!-- body -->
+              <div class="wb-pen-body" style="top:7px;bottom:18px;background:linear-gradient(to right,#1a0000,#6b0000,#cc0000,#e03030,#cc0000,#6b0000,#1a0000);">
+                <!-- button ridge -->
+                <div style="position:absolute;top:38%;left:-2px;right:-2px;height:5px;background:linear-gradient(to right,#440000,#990000,#440000);border-radius:1px;"></div>
+                <div style="position:absolute;top:2px;left:2px;width:2px;bottom:2px;border-radius:1px;background:rgba(255,255,255,0.18);"></div>
+              </div>
+              <!-- taper -->
+              <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:9px;height:12px;background:linear-gradient(to right,#880000,#cc2020,#880000);clip-path:polygon(0% 0%,100% 0%,60% 100%,40% 100%);"></div>
+              <!-- laser dot emitter -->
+              <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:4px;height:7px;background:radial-gradient(circle at 50% 30%,#ff6060,#ff0000,#880000);border-radius:50% 50% 2px 2px;box-shadow:0 0 4px #ff2020,0 0 8px rgba(255,0,0,0.6);"></div>
+            </div>
+
+            <!-- ERASER 3D: pink block eraser — beside the pens -->
+            <div class="wb-pen-3d" id="wbEraser3dBtn" onclick="setWbTool('eraser3d');wbPenRackActivate(this)" title="3D Eraser (X)" style="width:28px;height:52px;border-radius:4px;cursor:pointer;align-self:flex-end;">
+              <!-- eraser top face (lighter) -->
+              <div style="position:absolute;top:0;left:0;right:0;height:10px;border-radius:4px 4px 0 0;background:linear-gradient(to right,#d06070,#f08090,#ffb0bc,#f08090,#d06070);box-shadow:inset 0 1px 2px rgba(255,255,255,0.4);"></div>
+              <!-- main body -->
+              <div style="position:absolute;top:10px;bottom:8px;left:0;right:0;background:linear-gradient(to right,#b04050,#e06070,#ff8898,#ffa0aa,#ff8898,#e06070,#b04050);">
+                <!-- label band -->
+                <div style="position:absolute;top:30%;left:0;right:0;height:18%;background:linear-gradient(to right,#8a2030,#c03040,#8a2030);"></div>
+                <!-- shine -->
+                <div style="position:absolute;top:2px;left:3px;width:3px;bottom:2px;border-radius:1px;background:rgba(255,255,255,0.22);"></div>
+              </div>
+              <!-- rubber base (grey) -->
+              <div style="position:absolute;bottom:0;left:0;right:0;height:8px;border-radius:0 0 3px 3px;background:linear-gradient(to right,#808090,#b0b0c0,#d0d0dc,#b0b0c0,#808090);"></div>
+            </div>
+
           </div>
 
           <div class="wb-tool-sep"></div>
 
-          <!-- ③ Shape + eraser tools -->
+          <!-- ③ Shape tools -->
           <div class="wb-tool-group wb-center">
             <button class="wb-btn" id="wbArrowBtn" onclick="setWbTool('arrow')" title="Arrow">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3343,12 +3374,6 @@
             <button class="wb-btn" id="wbCircleBtn" onclick="setWbTool('circle')" title="Circle">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="9"/>
-              </svg>
-            </button>
-            <button class="wb-btn" id="wbEraserBtn" onclick="setWbTool('eraser')" title="Eraser" style="--wb-tool-tint:#fb7185;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 20H7L3 16l11-11 7 7z"/>
-                <line x1="6" y1="17" x2="17" y2="6"/>
               </svg>
             </button>
           </div>
@@ -3411,6 +3436,7 @@
           </svg>
         </button>
         <canvas id="whiteboardCanvas"></canvas>
+        <canvas id="laserCanvas" style="position:absolute;top:0;left:0;pointer-events:none;border-radius:22px;"></canvas>
       </div>
     </div>
     <!-- ===== PAUSE SESSION BANNER (shown to paused collaborators) ===== -->
@@ -12785,11 +12811,18 @@ localStorage.removeItem('key');`);
         let wbCanvas, wbCtx, wbIsDrawing = false, wbTool = 'pen', wbColor = '#a78bfa', wbSize = 4;
         let wbStartX = 0, wbStartY = 0, wbSnapshot = null, wbStrokes = [];
         let _wbInited = false; // guard against double-binding pointer listeners
+        let laserCanvas, laserCtx; // overlay canvas for laser — never touches main drawing
 
         function openWhiteboard() {
             document.getElementById('whiteboardOverlay').classList.add('open');
             if (!wbCtx) initWhiteboard();
             else resizeWbCanvas();
+            // Clear any pending laser fade timer
+            if (laserCanvas && laserCanvas._laserTimer) {
+                clearTimeout(laserCanvas._laserTimer);
+                laserCanvas._laserTimer = null;
+                if (laserCtx) laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+            }
             // When host opens whiteboard, send the full current board to all peers
             if (collabRoom) setTimeout(broadcastWbFullState, 200);
         }
@@ -12799,6 +12832,8 @@ localStorage.removeItem('key');`);
         function initWhiteboard() {
             wbCanvas = document.getElementById('whiteboardCanvas');
             wbCtx = wbCanvas.getContext('2d');
+            laserCanvas = document.getElementById('laserCanvas');
+            laserCtx = laserCanvas.getContext('2d');
             resizeWbCanvas();
             if (_wbInited) return; // already bound — don't double-attach listeners
             _wbInited = true;
@@ -12846,11 +12881,28 @@ localStorage.removeItem('key');`);
             if (!wbCanvas || !wbCanvas.parentElement) return; // guard: canvas not yet in DOM
             const container = wbCanvas.parentElement;
             const rect = container.getBoundingClientRect();
-            // Save current drawing
+            const dpr = window.devicePixelRatio || 1;
+            const cssW = Math.floor(rect.width);
+            const cssH = Math.floor(rect.height) - 56; // subtract header
+            // Save current drawing at CSS-pixel size before resize
             const img = wbCtx ? wbCtx.getImageData(0, 0, wbCanvas.width, wbCanvas.height) : null;
-            wbCanvas.width  = Math.floor(rect.width);
-            wbCanvas.height = Math.floor(rect.height) - 56; // subtract header
+            // Set canvas backing-store size to physical pixels
+            wbCanvas.width  = cssW * dpr;
+            wbCanvas.height = cssH * dpr;
+            // Keep CSS display size unchanged
+            wbCanvas.style.width  = cssW + 'px';
+            wbCanvas.style.height = cssH + 'px';
+            // Scale all drawing calls so 1 unit == 1 CSS pixel
+            wbCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             if (img) wbCtx.putImageData(img, 0, 0);
+            // Sync laser overlay canvas
+            if (laserCanvas) {
+                laserCanvas.width  = cssW * dpr;
+                laserCanvas.height = cssH * dpr;
+                laserCanvas.style.width  = cssW + 'px';
+                laserCanvas.style.height = cssH + 'px';
+                laserCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
         }
         function wbPenRackActivate(el) {
             document.querySelectorAll('.wb-pen-3d').forEach(p => p.classList.remove('active'));
@@ -12862,20 +12914,29 @@ localStorage.removeItem('key');`);
             document.querySelectorAll('.wb-btn[id^="wb"], .wb-pen-3d').forEach(b => b.classList.remove('active'));
             const btn = document.getElementById('wb' + tool.charAt(0).toUpperCase() + tool.slice(1) + 'Btn');
             if (btn) btn.classList.add('active');
-            wbCanvas.classList.toggle('eraser-mode', tool === 'eraser');
-            if (tool === 'marker')  { wbTool = 'marker'; }
-            if (tool === 'brush')   { wbTool = 'brush'; }
-            if (tool === 'pencil')  { wbTool = 'pencil'; }
-            if (tool === 'fine')    { wbTool = 'fine'; }
-            if (tool === 'select')  { wbTool = 'pen'; }
+            const isEraser = (tool === 'eraser' || tool === 'eraser3d');
+            wbCanvas.classList.toggle('eraser-mode', isEraser);
+            // Update canvas cursor
+            if (tool === 'laser') {
+                wbCanvas.style.cursor = 'crosshair';
+            } else if (isEraser) {
+                wbCanvas.style.cursor = 'cell';
+            } else {
+                wbCanvas.style.cursor = 'default';
+            }
+            if (tool === 'select') { wbTool = 'pen'; }
+        }
+        // Returns cursor position in CSS pixels (matches the DPR-scaled ctx transform)
+        function wbGetPos(e) {
+            const r = wbCanvas.getBoundingClientRect();
+            return { x: e.clientX - r.left, y: e.clientY - r.top };
         }
         function wbPointerDown(e) {
             wbIsDrawing = true;
             wbCanvas.setPointerCapture(e.pointerId);
-            const r = wbCanvas.getBoundingClientRect();
-            wbStartX = e.clientX - r.left;
-            wbStartY = e.clientY - r.top;
-            if (['pen','eraser','highlight','marker','brush','pencil','fine'].includes(wbTool)) {
+            const { x, y } = wbGetPos(e);
+            wbStartX = x; wbStartY = y;
+            if (['pen','eraser','eraser3d','laser','highlight','marker','brush','pencil','fine'].includes(wbTool)) {
                 wbCtx.beginPath();
                 wbCtx.moveTo(wbStartX, wbStartY);
             } else {
@@ -12884,14 +12945,12 @@ localStorage.removeItem('key');`);
         }
         function wbPointerMove(e) {
             if (!wbIsDrawing) return;
-            const r  = wbCanvas.getBoundingClientRect();
-            const x  = e.clientX - r.left;
-            const y  = e.clientY - r.top;
+            const { x, y } = wbGetPos(e);
             // Capture the FROM point BEFORE mutating wbStartX/Y
             const fromX = wbStartX;
             const fromY = wbStartY;
             wbApplyTool(wbTool, fromX, fromY, x, y, wbColor, wbSize, false);
-            if (['pen','eraser','highlight','marker','brush','pencil','fine'].includes(wbTool)) {
+            if (['pen','eraser','eraser3d','laser','highlight','marker','brush','pencil','fine'].includes(wbTool)) {
                 wbStartX = x; wbStartY = y;
             }
             // Broadcast using the captured FROM point so remote sees the correct segment
@@ -12900,32 +12959,61 @@ localStorage.removeItem('key');`);
         function wbPointerUp(e) {
             if (!wbIsDrawing) return;
             wbIsDrawing = false;
-            const r = wbCanvas.getBoundingClientRect();
-            // On pointerleave, clientX/Y may be outside the canvas — clamp to canvas bounds
-            const x = Math.max(0, Math.min(e.clientX - r.left, wbCanvas.width));
-            const y = Math.max(0, Math.min(e.clientY - r.top, wbCanvas.height));
+            const { x: rawX, y: rawY } = wbGetPos(e);
+            // On pointerleave, clientX/Y may be outside the canvas — clamp to CSS-pixel bounds
+            const cssW = parseInt(wbCanvas.style.width)  || wbCanvas.width;
+            const cssH = parseInt(wbCanvas.style.height) || wbCanvas.height;
+            const x = Math.max(0, Math.min(rawX, cssW));
+            const y = Math.max(0, Math.min(rawY, cssH));
             wbApplyTool(wbTool, wbStartX, wbStartY, x, y, wbColor, wbSize, true);
-            wbStrokes.push({ tool: wbTool, x0: wbStartX, y0: wbStartY, x1: x, y1: y, color: wbColor, size: wbSize });
+            if (wbTool !== 'laser') {
+                wbStrokes.push({ tool: wbTool, x0: wbStartX, y0: wbStartY, x1: x, y1: y, color: wbColor, size: wbSize });
+            }
             broadcastWbDraw({ tool: wbTool, x0: wbStartX, y0: wbStartY, x1: x, y1: y, color: wbColor, size: wbSize });
         }
         function wbApplyTool(tool, x0, y0, x1, y1, color, size, final) {
             const ctx = wbCtx;
             ctx.save();
-            ctx.lineWidth   = tool === 'highlight' ? size * 3 : size;
-            ctx.lineCap     = 'round';
-            ctx.lineJoin    = 'round';
-            if (tool === 'eraser') {
+            ctx.lineCap  = 'round';
+            ctx.lineJoin = 'round';
+
+            if (tool === 'pen') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1;
+                ctx.lineWidth   = size;
+                ctx.strokeStyle = color;
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+            } else if (tool === 'eraser' || tool === 'eraser3d') {
                 ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth   = tool === 'eraser3d' ? size * 2.5 : size;
                 ctx.strokeStyle = 'rgba(0,0,0,1)';
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+            } else if (tool === 'laser') {
+                // Laser draws on the OVERLAY canvas only — main canvas is never touched
+                const lctx = laserCtx;
+                lctx.save();
+                lctx.globalCompositeOperation = 'source-over';
+                lctx.globalAlpha = 0.92;
+                lctx.lineWidth   = Math.max(2, size * 0.7);
+                lctx.lineCap     = 'round';
+                lctx.lineJoin    = 'round';
+                lctx.strokeStyle = '#ff2222';
+                lctx.shadowColor = '#ff6060';
+                lctx.shadowBlur  = 12;
+                lctx.beginPath(); lctx.moveTo(x0, y0); lctx.lineTo(x1, y1); lctx.stroke();
+                lctx.restore();
+                // Reset timer on every segment — fades 800ms after pen stops
+                if (laserCanvas._laserTimer) clearTimeout(laserCanvas._laserTimer);
+                laserCanvas._laserTimer = setTimeout(() => {
+                    laserCanvas._laserTimer = null;
+                    laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+                }, 800);
             } else if (tool === 'highlight') {
                 ctx.globalCompositeOperation = 'source-over';
-                ctx.strokeStyle = color + '55';
-            } else {
-                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 0.35;
+                ctx.lineWidth   = size * 3;
                 ctx.strokeStyle = color;
-            }
-            ctx.fillStyle = color;
-            if (tool === 'pen' || tool === 'eraser' || tool === 'highlight') {
+                ctx.lineCap = 'square';
                 ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
             } else if (tool === 'marker') {
                 ctx.globalCompositeOperation = 'source-over';
@@ -18181,8 +18269,10 @@ var _markedPatchInterval = setInterval(function() {
           <span id="hubDetailCommentCount" style="font-size:15px;font-weight:900;color:#60a5fa;"></span>
           <span style="font-size:10px;color:var(--text-dim);">comments</span>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:8px 14px;">
-          <i class="fas fa-heart" style="color:#a78bfa;font-size:13px;"></i>
+        <div id="hubLikeBtn" onclick="hubToggleLike()" style="display:flex;align-items:center;gap:6px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:8px 14px;cursor:pointer;transition:background 0.15s,border-color 0.15s,transform 0.12s;user-select:none;" title="Like this project"
+          onmouseenter="this.style.background='rgba(167,139,250,0.18)';this.style.borderColor='rgba(167,139,250,0.5)'"
+          onmouseleave="this.style.background=this.dataset.liked==='1'?'rgba(167,139,250,0.18)':'rgba(167,139,250,0.08)';this.style.borderColor=this.dataset.liked==='1'?'rgba(167,139,250,0.5)':'rgba(167,139,250,0.2)'">
+          <i id="hubLikeIcon" class="fas fa-heart" style="color:#a78bfa;font-size:13px;transition:transform 0.15s;"></i>
           <span id="hubDetailLikes" style="font-size:15px;font-weight:900;color:#a78bfa;"></span>
           <span style="font-size:10px;color:var(--text-dim);">likes</span>
         </div>
@@ -18803,6 +18893,16 @@ window.hubOpenDetail = function(id) {
   document.getElementById('hubDetailCommentCount').textContent = (p.comments||[]).length;
   document.getElementById('hubDetailLikes').textContent = fmtNum(p.likes||0);
 
+  // Like button state
+  const likedSet = hubGetLikedSet();
+  const alreadyLiked = likedSet.has(id);
+  const likeBtn  = document.getElementById('hubLikeBtn');
+  const likeIcon = document.getElementById('hubLikeIcon');
+  likeBtn.dataset.liked = alreadyLiked ? '1' : '0';
+  likeBtn.style.background  = alreadyLiked ? 'rgba(167,139,250,0.18)' : 'rgba(167,139,250,0.08)';
+  likeBtn.style.borderColor = alreadyLiked ? 'rgba(167,139,250,0.5)'  : 'rgba(167,139,250,0.2)';
+  likeIcon.style.filter     = alreadyLiked ? 'drop-shadow(0 0 4px #a78bfa)' : '';
+
   // Desc
   document.getElementById('hubDetailDesc').textContent = p.desc;
 
@@ -18854,6 +18954,58 @@ window.hubRate = function(n) {
     });
   });
   hubShowToast('Rating saved!', 'success');
+};
+
+// ── Like / Unlike ─────────────────────────────────────────
+function hubGetLikedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem('hub_liked') || '[]')); }
+  catch { return new Set(); }
+}
+function hubSaveLikedSet(set) {
+  try { localStorage.setItem('hub_liked', JSON.stringify([...set])); } catch {}
+}
+window.hubToggleLike = function() {
+  if (!hubCurrentProject) return;
+  const pid  = hubCurrentProject.id;
+  const liked = hubGetLikedSet();
+  const isLiked = liked.has(pid);
+  const btn  = document.getElementById('hubLikeBtn');
+  const icon = document.getElementById('hubLikeIcon');
+  const lbl  = document.getElementById('hubDetailLikes');
+
+  // Optimistic UI update
+  const current = hubCurrentProject.likes || 0;
+  const next = isLiked ? Math.max(0, current - 1) : current + 1;
+  hubCurrentProject.likes = next;
+  lbl.textContent = fmtNum(next);
+
+  if (isLiked) {
+    liked.delete(pid);
+    btn.dataset.liked = '0';
+    btn.style.background = 'rgba(167,139,250,0.08)';
+    btn.style.borderColor = 'rgba(167,139,250,0.2)';
+    icon.style.filter = '';
+    icon.style.transform = '';
+  } else {
+    liked.add(pid);
+    btn.dataset.liked = '1';
+    btn.style.background = 'rgba(167,139,250,0.18)';
+    btn.style.borderColor = 'rgba(167,139,250,0.5)';
+    icon.style.filter = 'drop-shadow(0 0 4px #a78bfa)';
+    icon.style.transform = 'scale(1.3)';
+    setTimeout(() => { if (icon) icon.style.transform = 'scale(1)'; }, 200);
+  }
+  hubSaveLikedSet(liked);
+
+  // Persist to Firebase
+  hubWaitForFB().then(db => {
+    db.ref(`${HUB_FB_PATH}/${pid}`).transaction(p => {
+      if (!p) return p;
+      p.likes = Math.max(0, (p.likes || 0) + (isLiked ? -1 : 1));
+      return p;
+    });
+  });
+  hubShowToast(isLiked ? 'Like removed' : 'Liked! ❤️', isLiked ? 'info' : 'success');
 };
 
 function hubRenderComments(comments) {
