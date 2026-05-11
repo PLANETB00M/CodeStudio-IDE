@@ -117,7 +117,7 @@
 
         <style>
 /* ================================================================
-   CodeStudio IDE — Base Design System v9
+   CodeStudio IDE — Base Design System v900
    CSS custom properties, theme presets (dracula, oceanic, monokai,
    midnight, nord, synthwave + carbon/grid/dots textures), layout
    primitives, scrollbar styling, light-mode overrides.
@@ -1234,33 +1234,41 @@
             background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 22px;
-            display: flex; flex-direction: column; overflow: hidden;
-            width: min(96vw, 1180px);
-            height: min(90vh, 760px);
+            display: flex; flex-direction: column; overflow: visible;
+            width: min(96vw, 1280px);
+            height: min(92vh, 840px);
             box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
             transition: background var(--trans-speed), border-color var(--trans-speed);
+            position: relative;
         }
 
-        /* ── Toolbar bar ── */
+        /* ── Floating toolbar — bottom center, floats ABOVE canvas ── */
         #whiteboardHeader {
-            background: var(--wb-bar);
-            border-bottom: 1px solid var(--wb-bar-border);
-            display: flex; align-items: center; gap: 5px;
-            padding: 7px 12px; flex-shrink: 0;
-            border-radius: 22px 22px 0 0;
-            transition: background var(--trans-speed), border-color var(--trans-speed);
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(14,14,20,0.88);
+            backdrop-filter: blur(20px) saturate(1.8);
+            -webkit-backdrop-filter: blur(20px) saturate(1.8);
+            border: 1px solid rgba(255,255,255,0.11);
+            border-radius: 999px;
+            display: flex; align-items: flex-end; gap: 3px;
+            padding: 10px 18px 12px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.07) inset;
+            overflow: visible;
+            width: max-content;
+            max-width: 92vw;
+        }
+        .light-mode #whiteboardHeader {
+            background: rgba(238,240,250,0.92) !important;
+            border-color: rgba(0,0,0,0.12) !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.8) inset !important;
         }
         #whiteboardHeader h3 { display: none; }
 
         /* ── Tool-group separator ── */
-        .wb-tool-sep {
-            width: 1px; height: 26px;
-            background: var(--wb-sep);
-            margin: 0 3px; flex-shrink: 0;
-            opacity: 0.6;
-        }
-        .wb-tool-group { display: flex; align-items: center; gap: 2px; }
-
         /* ── Tool buttons ── */
         .wb-btn {
             width: 34px; height: 34px; border-radius: 9px;
@@ -1269,7 +1277,7 @@
             color: var(--text-dim);
             cursor: pointer; font-size: 13px;
             display: flex; align-items: center; justify-content: center;
-            transition: background 0.13s, color 0.13s, border-color 0.13s, box-shadow 0.13s;
+            transition: background 0.13s, color 0.13s, border-color 0.13s, box-shadow 0.13s, transform 0.13s;
             flex-shrink: 0;
         }
         .wb-btn:hover {
@@ -1286,6 +1294,88 @@
             color: var(--wb-btn-active-text);
             box-shadow: 0 2px 10px rgba(var(--accent-rgb), 0.35);
         }
+
+        /* ── 3D CSS pen rack — pens tip-DOWN, body rises above toolbar ── */
+        .wb-pen-rack {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 88px;
+            margin-top: -54px;
+            padding: 0 2px;
+            overflow: visible;
+            position: relative;
+        }
+        .wb-pen-3d {
+            position: relative;
+            cursor: pointer;
+            transform-origin: bottom center;
+            transition: transform 0.38s cubic-bezier(0.175,0.885,0.32,1.275), filter 0.25s;
+            filter: drop-shadow(0 5px 8px rgba(0,0,0,0.7));
+            flex-shrink: 0;
+        }
+        .wb-pen-3d:hover {
+            transform: translateY(-10px) rotate(-5deg);
+            filter: drop-shadow(0 14px 18px rgba(0,0,0,0.85));
+        }
+        .wb-pen-3d.active {
+            transform: translateY(-20px) rotate(-3deg) scale(1.04);
+            filter: drop-shadow(0 22px 30px rgba(0,0,0,0.95));
+        }
+        /* Cylindrical body */
+        .wb-pen-body {
+            position: absolute;
+            bottom: 18px;
+            left: 0; right: 0;
+            border-radius: 3px 3px 2px 2px;
+            box-shadow:
+                inset 2px 0 3px rgba(255,255,255,0.38),
+                inset -2px 0 5px rgba(0,0,0,0.85),
+                0 3px 8px rgba(0,0,0,0.6);
+        }
+        /* Color band */
+        .wb-pen-band {
+            position: absolute;
+            left: 0; right: 0;
+            height: 13px;
+            border-top: 1px solid rgba(0,0,0,0.35);
+            border-bottom: 1px solid rgba(0,0,0,0.35);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.45),
+                        inset 0 -2px 5px rgba(0,0,0,0.45);
+        }
+        /* Cap at top of pen (opposite tip) */
+        .wb-pen-cap {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50% 50% 2px 2px;
+        }
+        /* Tip pointing DOWN */
+        .wb-pen-tip {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 1px 1px 50% 50%;
+        }
+        /* Marker chisel tip */
+        .wb-marker-tip {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px 2px 3px 3px;
+        }
+        /* Separator */
+        .wb-tool-sep {
+            width: 1px; height: 26px;
+            background: rgba(255,255,255,0.12);
+            margin: 0 4px; flex-shrink: 0;
+            align-self: center;
+        }
+        .wb-tool-group { display: flex; align-items: center; gap: 2px; }
+        .wb-tool-group.wb-center { align-items: center; }
 
         /* ── Color palette grid 2 × 5 ── */
         .wb-palette {
@@ -1365,18 +1455,25 @@
         }
         #wbStarBtn:hover, #wbStarBtn.starred { color: var(--warning); transform: scale(1.2); }
 
-        /* ── Close button ── */
+        /* ── Close button — absolute corner of whiteboardContainer ── */
         #wbCloseBtn {
-            width: 28px; height: 28px; border-radius: 7px;
-            background: rgba(239,68,68,0.10);
-            border: 1px solid rgba(239,68,68,0.22);
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 200;
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.30);
             color: var(--danger);
-            cursor: pointer; font-size: 11px;
+            cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: background 0.13s;
-            margin-left: auto; flex-shrink: 0;
+            transition: background 0.15s, transform 0.15s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
         }
-        #wbCloseBtn:hover { background: rgba(239,68,68,0.22); }
+        #wbCloseBtn:hover {
+            background: rgba(239,68,68,0.30);
+            transform: scale(1.12);
+        }
 
         /* ── Canvas ── */
         #whiteboardCanvas {
@@ -1385,6 +1482,8 @@
             cursor: crosshair;
             touch-action: none;
             transition: background var(--trans-speed);
+            border-radius: 22px;
+            width: 100%;
         }
         #whiteboardCanvas.eraser-mode { cursor: cell; }
 
@@ -3103,7 +3202,7 @@
         <div id="whiteboardHeader">
 
           <!-- ① Select + Text -->
-          <div class="wb-tool-group">
+          <div class="wb-tool-group wb-center">
             <button class="wb-btn" id="wbSelectBtn" onclick="setWbTool('select')" title="Select (V)">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M3 1l13 9-6 1-3 7z"/></svg>
             </button>
@@ -3117,50 +3216,120 @@
 
           <div class="wb-tool-sep"></div>
 
-          <!-- ② Freehand drawing tools -->
-          <div class="wb-tool-group">
-            <button class="wb-btn active" id="wbPenBtn" onclick="setWbTool('pen')" title="Pen (P)" style="--wb-tool-tint:#f87171;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-              </svg>
-            </button>
-            <button class="wb-btn" id="wbMarkerBtn" onclick="setWbTool('marker')" title="Marker (M)" style="--wb-tool-tint:#fbbf24;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>
-                <path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-              </svg>
-            </button>
-            <button class="wb-btn" id="wbHighlightBtn" onclick="setWbTool('highlight')" title="Highlighter (H)" style="--wb-tool-tint:#fde047;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 11L4 16l2 5 14-10-8-7z"/>
-                <line x1="15" y1="5" x2="18" y2="8"/>
-              </svg>
-            </button>
-            <button class="wb-btn" id="wbBrushBtn" onclick="setWbTool('brush')" title="Brush (B)" style="--wb-tool-tint:#c084fc;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 20a2 2 0 0 1 0-4c1.6 0 2.6 1 3 2"/>
-                <path d="M7 18C7 9 17 2 21 2c0 4-7 10-7 16"/>
-              </svg>
-            </button>
-            <button class="wb-btn" id="wbPencilBtn" onclick="setWbTool('pencil')" title="Pencil (E)" style="--wb-tool-tint:#94a3b8;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="14 2 18 6 7 17 3 17 3 13 14 2"/>
-                <line x1="3" y1="22" x2="21" y2="22"/>
-              </svg>
-            </button>
-            <button class="wb-btn" id="wbFineBtn" onclick="setWbTool('fine')" title="Fineliner (F)" style="--wb-tool-tint:#60a5fa;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                <line x1="12" y1="3" x2="12" y2="21"/>
-                <line x1="7" y1="8" x2="17" y2="8"/>
-                <line x1="8.5" y1="17" x2="15.5" y2="17"/>
-              </svg>
-            </button>
+          <!-- ② Freehand drawing tools — CSS 3D pen rack -->
+          <div class="wb-pen-rack">
+
+            <!-- PEN: slim white/lavender, ballpoint -->
+            <div class="wb-pen-3d active" id="wbPenBtn" onclick="setWbTool('pen');wbPenRackActivate(this)" title="Pen (P)" style="width:16px;height:82px;">
+              <!-- eraser cap -->
+              <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:10px;height:9px;border-radius:50% 50% 2px 2px;background:linear-gradient(to right,#cc7070,#ffaaaa,#cc7070);box-shadow:inset 0 1px 2px rgba(255,255,255,0.4),inset 0 -1px 3px rgba(0,0,0,0.5);"></div>
+              <!-- ferrule ring -->
+              <div style="position:absolute;top:9px;left:0;right:0;height:4px;background:linear-gradient(to right,#888,#ddd,#fff,#ddd,#888);"></div>
+              <!-- body -->
+              <div class="wb-pen-body" style="top:13px;bottom:18px;background:linear-gradient(to right,#b0b0c8 0%,#e8e8f8 25%,#ffffff 50%,#d8d8ec 75%,#a0a0c0 100%);border-radius:2px 2px 2px 2px;">
+                <!-- lavender stripe -->
+                <div class="wb-pen-band" style="bottom:10px;background:linear-gradient(to right,#5a4fcc,#a78bfa,#8b75f5,#a78bfa,#5a4fcc);"></div>
+                <!-- shine -->
+                <div style="position:absolute;top:2px;left:2px;width:3px;bottom:2px;border-radius:1.5px;background:rgba(255,255,255,0.45);"></div>
+              </div>
+              <!-- metal grip -->
+              <div style="position:absolute;bottom:16px;left:0;right:0;height:8px;background:linear-gradient(to right,#6880a0,#b0c8e0,#e0eeff,#b0c8e0,#6880a0);box-shadow:inset 0 1px 2px rgba(255,255,255,0.3);"></div>
+              <!-- taper + tip -->
+              <div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:10px;height:12px;background:linear-gradient(to right,#7898b8,#c8ddf0,#7898b8);clip-path:polygon(10% 0%,90% 0%,65% 100%,35% 100%);"></div>
+              <div class="wb-pen-tip" style="width:5px;height:5px;background:#222a38;border-radius:50%;bottom:0;"></div>
+            </div>
+
+            <!-- MARKER: chunky orange board marker -->
+            <div class="wb-pen-3d" id="wbMarkerBtn" onclick="setWbTool('marker');wbPenRackActivate(this)" title="Marker (M)" style="width:22px;height:82px;">
+              <!-- cap top -->
+              <div style="position:absolute;top:0;left:0;right:0;height:16px;border-radius:4px 4px 1px 1px;background:linear-gradient(to right,#909098,#d0d0d8,#f4f4fc,#d0d0d8,#909098);box-shadow:inset 2px 0 2px rgba(255,255,255,0.3),inset -2px 0 3px rgba(0,0,0,0.5);"></div>
+              <div style="position:absolute;top:15px;left:0;right:0;height:3px;background:linear-gradient(to right,#707078,#b0b0b8,#707078);"></div>
+              <!-- body -->
+              <div class="wb-pen-body" style="top:18px;bottom:22px;background:linear-gradient(to right,#b84000 0%,#e06000 20%,#ff8020 45%,#ffa040 50%,#ff8020 55%,#e06000 80%,#a03800 100%);">
+                <div class="wb-pen-band" style="bottom:8px;background:linear-gradient(to right,#903000,#c04800,#903000);height:16px;"></div>
+                <div style="position:absolute;top:2px;left:3px;width:4px;bottom:2px;border-radius:2px;background:rgba(255,255,255,0.20);"></div>
+              </div>
+              <!-- ferrule -->
+              <div style="position:absolute;bottom:18px;left:0;right:0;height:6px;background:linear-gradient(to right,#606068,#a8a8b0,#d0d0d8,#a8a8b0,#606068);"></div>
+              <!-- chisel tip -->
+              <div class="wb-marker-tip" style="width:14px;height:18px;bottom:0;background:linear-gradient(to right,#802800,#c04000,#802800);border-radius:2px 2px 4px 4px;">
+                <div style="position:absolute;top:2px;left:3px;width:3px;height:70%;border-radius:1px;background:rgba(255,255,255,0.15);"></div>
+              </div>
+            </div>
+
+            <!-- HIGHLIGHTER: fat yellow -->
+            <div class="wb-pen-3d" id="wbHighlightBtn" onclick="setWbTool('highlight');wbPenRackActivate(this)" title="Highlighter (H)" style="width:22px;height:78px;">
+              <!-- round cap -->
+              <div style="position:absolute;top:0;left:0;right:0;height:12px;border-radius:50% 50% 2px 2px;background:linear-gradient(to right,#609000,#a0c820,#c0e840,#a0c820,#609000);box-shadow:inset 2px 0 2px rgba(255,255,255,0.3),inset -2px 0 4px rgba(0,0,0,0.5);"></div>
+              <!-- body -->
+              <div class="wb-pen-body" style="top:12px;bottom:22px;background:linear-gradient(to right,#a89000 0%,#d4b800 20%,#ffe040 48%,#fff080 50%,#ffe040 52%,#d0b000 80%,#988800 100%);">
+                <div class="wb-pen-band" style="bottom:6px;background:linear-gradient(to right,#8a7000,#c0a000,#8a7000);height:18px;"></div>
+                <div style="position:absolute;top:2px;left:3px;width:4px;bottom:2px;border-radius:2px;background:rgba(255,255,255,0.28);"></div>
+              </div>
+              <!-- angled chisel tip -->
+              <div style="position:absolute;bottom:0;left:0;right:0;height:22px;overflow:hidden;">
+                <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:18px;height:22px;background:linear-gradient(to right,#886400,#c09000,#886400);border-radius:2px 2px 5px 5px;box-shadow:inset 1px 0 2px rgba(255,255,255,0.2),inset -2px 0 4px rgba(0,0,0,0.5);"></div>
+              </div>
+            </div>
+
+            <!-- BRUSH: purple artist brush -->
+            <div class="wb-pen-3d" id="wbBrushBtn" onclick="setWbTool('brush');wbPenRackActivate(this)" title="Brush (B)" style="width:16px;height:84px;">
+              <!-- round handle top -->
+              <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:12px;height:10px;border-radius:50% 50% 2px 2px;background:linear-gradient(to right,#5010a0,#8030c0,#c084fc,#8030c0,#5010a0);box-shadow:inset 1px 0 2px rgba(255,255,255,0.3),inset -1px 0 3px rgba(0,0,0,0.6);"></div>
+              <!-- slim handle body -->
+              <div class="wb-pen-body" style="top:10px;bottom:26px;width:12px;left:50%;transform:translateX(-50%);background:linear-gradient(to right,#4808a0,#8030c0,#b060e8,#c080f8,#b060e8,#8030c0,#4808a0);">
+                <div style="position:absolute;top:2px;left:2px;width:2px;bottom:2px;border-radius:1px;background:rgba(255,255,255,0.32);"></div>
+              </div>
+              <!-- ferrule silver band -->
+              <div style="position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:14px;height:6px;background:linear-gradient(to right,#606068,#b0b0c0,#e0e0ec,#b0b0c0,#606068);border-radius:1px;"></div>
+              <!-- bristle bulge -->
+              <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:13px;height:14px;background:linear-gradient(to right,#907030,#c09050,#e0b070,#c09050,#907030);border-radius:2px 2px 4px 4px;box-shadow:inset 1px 0 2px rgba(255,255,255,0.2);"></div>
+              <!-- bristle tip -->
+              <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:9px;height:10px;background:linear-gradient(to right,#805020,#b07840,#805020);border-radius:1px 1px 50% 50%;"></div>
+            </div>
+
+            <!-- PENCIL: classic yellow hex pencil -->
+            <div class="wb-pen-3d" id="wbPencilBtn" onclick="setWbTool('pencil');wbPenRackActivate(this)" title="Pencil (E)" style="width:18px;height:86px;">
+              <!-- pink eraser -->
+              <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:12px;height:8px;border-radius:50% 50% 1px 1px;background:linear-gradient(to right,#cc6080,#ff9aaa,#ff8090,#ff9aaa,#cc6080);box-shadow:inset 1px 0 2px rgba(255,255,255,0.3),inset -1px 0 3px rgba(0,0,0,0.4);"></div>
+              <!-- silver ferrule -->
+              <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:14px;height:5px;background:linear-gradient(to right,#888,#ccc,#eee,#ccc,#888);"></div>
+              <!-- hex body — 3 facets -->
+              <div style="position:absolute;top:13px;bottom:22px;left:0;width:5px;background:linear-gradient(to right,#a07800,#c8a000);border-radius:1px 0 0 1px;"></div>
+              <div style="position:absolute;top:13px;bottom:22px;left:4px;right:4px;background:linear-gradient(to bottom,#ffd020,#ffe060,#ffc820);box-shadow:inset 1px 0 1px rgba(255,255,255,0.2);"></div>
+              <div style="position:absolute;top:13px;bottom:22px;right:0;width:5px;background:linear-gradient(to right,#c8a000,#a07800);border-radius:0 1px 1px 0;"></div>
+              <!-- shine -->
+              <div style="position:absolute;top:15px;bottom:24px;left:5px;width:2px;border-radius:1px;background:rgba(255,255,255,0.35);"></div>
+              <!-- wood cone -->
+              <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:14px;height:16px;background:linear-gradient(to right,#a06030,#d0905050,#c08040,#a06030);clip-path:polygon(0% 0%,100% 0%,62% 100%,38% 100%);"></div>
+              <!-- graphite tip -->
+              <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:5px;height:7px;background:linear-gradient(to right,#353540,#555568,#353540);border-radius:1px 1px 50% 50%;"></div>
+            </div>
+
+            <!-- FINELINER: slim dark blue needle pen -->
+            <div class="wb-pen-3d" id="wbFineBtn" onclick="setWbTool('fine');wbPenRackActivate(this)" title="Fineliner (F)" style="width:14px;height:88px;">
+              <!-- blue cap -->
+              <div style="position:absolute;top:0;left:0;right:0;height:18px;border-radius:4px 4px 1px 1px;background:linear-gradient(to right,#1040a0,#2060c8,#60a5fa,#4080e0,#1040a0);box-shadow:inset 2px 0 2px rgba(255,255,255,0.3),inset -1px 0 3px rgba(0,0,0,0.6);">
+                <!-- cap clip -->
+                <div style="position:absolute;top:2px;right:-3px;width:3px;height:16px;border-radius:1px;background:linear-gradient(to right,#2050b0,#5090e0);"></div>
+              </div>
+              <!-- body -->
+              <div class="wb-pen-body" style="top:18px;bottom:20px;background:linear-gradient(to right,#101840,#1e3070,#2848a0,#3060b8,#2848a0,#1e3070,#101840);">
+                <div class="wb-pen-band" style="bottom:8px;background:linear-gradient(to right,#0a1050,#1a2878,#0a1050);height:10px;"></div>
+                <div style="position:absolute;top:2px;left:2px;width:2px;bottom:2px;border-radius:1px;background:rgba(255,255,255,0.18);"></div>
+              </div>
+              <!-- taper -->
+              <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:10px;height:12px;background:linear-gradient(to right,#182060,#2840a0,#182060);clip-path:polygon(0% 0%,100% 0%,65% 100%,35% 100%);"></div>
+              <!-- needle tip -->
+              <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:3px;height:9px;background:linear-gradient(to right,#0a0a10,#3040a0,#0a0a10);border-radius:1px 1px 50% 50%;"></div>
+            </div>
+
           </div>
 
           <div class="wb-tool-sep"></div>
 
           <!-- ③ Shape + eraser tools -->
-          <div class="wb-tool-group">
+          <div class="wb-tool-group wb-center">
             <button class="wb-btn" id="wbArrowBtn" onclick="setWbTool('arrow')" title="Arrow">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -3218,7 +3387,7 @@
           <div class="wb-tool-sep"></div>
 
           <!-- ⑥ Star · Undo · Clear -->
-          <div class="wb-tool-group">
+          <div class="wb-tool-group wb-center">
             <button id="wbStarBtn" onclick="wbToggleStar()" title="Bookmark canvas">★</button>
             <button class="wb-btn" onclick="wbUndo()" title="Undo (Ctrl+Z)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -3233,15 +3402,14 @@
             </button>
           </div>
 
-          <!-- ⑦ Close -->
-          <button id="wbCloseBtn" onclick="closeWhiteboard()" title="Close whiteboard (Esc)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-
           <h3>Collaborative Whiteboard</h3>
         </div>
+        <!-- Close button floats at top-right corner of whiteboard -->
+        <button id="wbCloseBtn" onclick="closeWhiteboard()" title="Close whiteboard (Esc)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
         <canvas id="whiteboardCanvas"></canvas>
       </div>
     </div>
@@ -12684,18 +12852,22 @@ localStorage.removeItem('key');`);
             wbCanvas.height = Math.floor(rect.height) - 56; // subtract header
             if (img) wbCtx.putImageData(img, 0, 0);
         }
+        function wbPenRackActivate(el) {
+            document.querySelectorAll('.wb-pen-3d').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+        }
         function setWbTool(tool) {
             wbTool = tool;
-            document.querySelectorAll('.wb-btn[id^="wb"]').forEach(b => b.classList.remove('active'));
+            // Remove active from all tool buttons (regular + pen rack)
+            document.querySelectorAll('.wb-btn[id^="wb"], .wb-pen-3d').forEach(b => b.classList.remove('active'));
             const btn = document.getElementById('wb' + tool.charAt(0).toUpperCase() + tool.slice(1) + 'Btn');
             if (btn) btn.classList.add('active');
             wbCanvas.classList.toggle('eraser-mode', tool === 'eraser');
-            // Map new tool names to canvas behaviour
             if (tool === 'marker')  { wbTool = 'marker'; }
             if (tool === 'brush')   { wbTool = 'brush'; }
             if (tool === 'pencil')  { wbTool = 'pencil'; }
             if (tool === 'fine')    { wbTool = 'fine'; }
-            if (tool === 'select')  { wbTool = 'pen'; } // fallback to pen for select
+            if (tool === 'select')  { wbTool = 'pen'; }
         }
         function wbPointerDown(e) {
             wbIsDrawing = true;
