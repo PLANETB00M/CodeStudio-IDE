@@ -19081,7 +19081,21 @@ function hubGetLikedSet() {
 function hubSaveLikedSet(set) {
   try { localStorage.setItem('hub_liked', JSON.stringify([...set])); } catch {}
 }
-window.hubToggleLike = function() {
+window.hubToggleLike = async function() {
+  // Require Google sign-in
+  let currentUser = window._fbCurrentUser;
+  const isGoogle = currentUser && currentUser.providerData &&
+    currentUser.providerData.some(p => p.providerId === 'google.com');
+  if (!isGoogle) {
+    hubShowToast('Sign in with Google to like projects', 'error');
+    try {
+      const u = await signInWithFirebaseGoogle();
+      if (!u) return;
+      await new Promise(r => setTimeout(r, 500));
+      currentUser = window._fbCurrentUser;
+      if (!currentUser) return;
+    } catch(e) { return; }
+  }
   if (!hubCurrentProject) return;
   const pid  = hubCurrentProject.id;
   const liked = hubGetLikedSet();
@@ -19145,7 +19159,21 @@ function hubRenderComments(comments) {
   `).join('');
 }
 
-window.hubPostComment = function() {
+window.hubPostComment = async function() {
+  // Require Google sign-in
+  let currentUser = window._fbCurrentUser;
+  const isGoogle = currentUser && currentUser.providerData &&
+    currentUser.providerData.some(p => p.providerId === 'google.com');
+  if (!isGoogle) {
+    hubShowToast('Sign in with Google to post comments', 'error');
+    try {
+      const u = await signInWithFirebaseGoogle();
+      if (!u) return;
+      await new Promise(r => setTimeout(r, 500));
+      currentUser = window._fbCurrentUser;
+      if (!currentUser) return;
+    } catch(e) { return; }
+  }
   const inp = document.getElementById('hubCommentInput');
   const text = inp.value.trim();
   if (!text || !hubCurrentProject) return;
@@ -19994,12 +20022,15 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
     document.getElementById('hubProfileTotalDownloads').textContent = '…';
     document.getElementById('hubProfileProjectsList').innerHTML = '<div class="hub-profile-empty"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
 
-    // Hide follow btn for own profile or guests without uid
+    // Hide follow btn for own profile only; show for all other profiles with ownerUid
     const followBtn = document.getElementById('hubProfileFollowBtn');
     const currentUser = window._fbCurrentUser;
     const isOwnProfile = currentUser && ownerUid && currentUser.uid === ownerUid;
-    // Show follow btn for any profile that isn't your own (guests will be prompted to sign in)
+    // Show follow btn whenever there's an ownerUid and it's not the user's own profile
+    // If not logged in, hubToggleFollow() will prompt sign-in
     followBtn.style.display = (ownerUid && !isOwnProfile) ? 'flex' : 'none';
+    // Reset button state to default (not following) until Firebase confirms
+    _setFollowBtnState(false);
 
     document.getElementById('hubProfileOverlay').classList.add('open');
 
@@ -20106,11 +20137,15 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
 
   window.hubToggleFollow = async function() {
     let currentUser = window._fbCurrentUser;
-    if (!currentUser || !currentUser.providerData || !currentUser.providerData.some(p => p.providerId === 'google.com')) {
+    const isLoggedInWithGoogle = currentUser && currentUser.providerData &&
+      currentUser.providerData.some(p => p.providerId === 'google.com');
+    if (!isLoggedInWithGoogle) {
       hubShowToast('Sign in with Google to follow users', 'error');
       try {
         const u = await signInWithFirebaseGoogle();
         if (!u) return;
+        // Wait a moment for _fbCurrentUser to be updated by auth state listener
+        await new Promise(r => setTimeout(r, 500));
         currentUser = window._fbCurrentUser;
         if (!currentUser) return;
       } catch(e) { return; }
