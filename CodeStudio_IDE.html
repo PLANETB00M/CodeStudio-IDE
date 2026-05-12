@@ -19998,6 +19998,7 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
     const followBtn = document.getElementById('hubProfileFollowBtn');
     const currentUser = window._fbCurrentUser;
     const isOwnProfile = currentUser && ownerUid && currentUser.uid === ownerUid;
+    // Show follow btn for any profile that isn't your own (guests will be prompted to sign in)
     followBtn.style.display = (ownerUid && !isOwnProfile) ? 'flex' : 'none';
 
     document.getElementById('hubProfileOverlay').classList.add('open');
@@ -20104,10 +20105,15 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
   }
 
   window.hubToggleFollow = async function() {
-    const currentUser = window._fbCurrentUser;
-    if (!currentUser) {
-      hubShowToast('Sign in to follow users', 'error');
-      return;
+    let currentUser = window._fbCurrentUser;
+    if (!currentUser || !currentUser.providerData || !currentUser.providerData.some(p => p.providerId === 'google.com')) {
+      hubShowToast('Sign in with Google to follow users', 'error');
+      try {
+        const u = await signInWithFirebaseGoogle();
+        if (!u) return;
+        currentUser = window._fbCurrentUser;
+        if (!currentUser) return;
+      } catch(e) { return; }
     }
     if (!_profileOwnerUid) return;
 
