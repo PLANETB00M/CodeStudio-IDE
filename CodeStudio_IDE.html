@@ -6308,7 +6308,7 @@
 
                 // Restore sidebar hidden state
                 const savedSidebarHidden = localStorage.getItem('cs_sidebar_hidden');
-                const _allActIds = ['actExplorer','actSearch','actCollab','actTools','actLibraries','actGroqAI'];
+                const _allActIds = ['actExplorer','actSearch','actCollab','actTools','actLibraries','actGroqAI','actHub'];
                 if (savedSidebarHidden === 'true') {
                     const side = document.getElementById('sidePanel');
                     if (side && !side.classList.contains('hidden-files')) {
@@ -7378,7 +7378,7 @@
             el.classList.toggle('active');
             const isActive = el.classList.contains('active');
             // Remove active from all other icons first
-            ['actExplorer','actSearch','actTools','actLibraries','actGroqAI'].forEach(id => {
+            ['actExplorer','actSearch','actTools','actLibraries','actGroqAI','actHub'].forEach(id => {
                 const e = document.getElementById(id); if (e) e.classList.remove('active');
             });
             const icon = document.getElementById('actCollab');
@@ -7390,7 +7390,7 @@
             const side         = document.getElementById('sidePanel');
             const isRight      = document.body.getAttribute('data-sidebar-pos') === 'right';
             const sideWidth    = side.getBoundingClientRect().width || 260;
-            const allActIds    = ['actExplorer','actSearch','actCollab','actTools','actLibraries','actGroqAI'];
+            const allActIds    = ['actExplorer','actSearch','actCollab','actTools','actLibraries','actGroqAI','actHub'];
 
             // Save currently active icon before closing
             if (!side.classList.contains('hidden-files')) {
@@ -15049,6 +15049,13 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
                 Object.values(actIds).forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
                 // Also deactivate collab icon (it's a modal, not a tab)
                 const collabIcon = document.getElementById('actCollab'); if (collabIcon) collabIcon.classList.remove('active');
+                // Also close Hub overlay if open, and deactivate its icon
+                const hubOverlay = document.getElementById('hubOverlay');
+                if (hubOverlay && hubOverlay.classList.contains('hub-open')) {
+                    hubOverlay.classList.remove('hub-open');
+                    if (typeof hubUnsubscribe === 'function') hubUnsubscribe();
+                }
+                const hubIcon = document.getElementById('actHub'); if (hubIcon) hubIcon.classList.remove('active');
                 if (activeIcon) activeIcon.classList.add('active');
 
                 // Tab-specific sync
@@ -18771,19 +18778,15 @@ function hubSaveRatings(r) {
 
 // ── Open / Close ────────────────────────────────────────
 window.openHub = function() {
-  // Hub requires Google account
-  const user = window._fbCurrentUser;
-  if (!user || !user.providerData || !user.providerData.some(p => p.providerId === 'google.com')) {
-    hubShowToast('Sign in with Google to access the Hub', 'error');
-    // Trigger Google sign-in
-    signInWithFirebaseGoogle().then(u => {
-      if (u) openHub();
-    }).catch(() => {});
-    return;
-  }
   const badge = document.getElementById('hubNavBadge');
   if (badge) badge.style.display = 'none';
   document.getElementById('hubOverlay').classList.add('hub-open');
+  // Mark actHub as active, clear other sidebar icons
+  ['actExplorer','actSearch','actCollab','actTools','actLibraries','actGroqAI'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.classList.remove('active');
+  });
+  const hubIcon = document.getElementById('actHub');
+  if (hubIcon) hubIcon.classList.add('active');
   hubPopulatePublishProjects();
   hubSubscribe();
 };
@@ -18791,6 +18794,8 @@ window.openHub = function() {
 window.closeHub = function() {
   document.getElementById('hubOverlay').classList.remove('hub-open');
   hubUnsubscribe(); // stop Firebase listener to save bandwidth
+  const hubIcon = document.getElementById('actHub');
+  if (hubIcon) hubIcon.classList.remove('active');
 };
 
 // ── Sort & Tag Controls ─────────────────────────────────
