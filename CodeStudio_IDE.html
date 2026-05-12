@@ -8664,6 +8664,7 @@
             if (e) e.stopPropagation();
             if (!await customConfirm(`Delete "${name}"?`)) return;
             const mFiles = _getMediaFiles();
+            const mf = mFiles[name];
             delete mFiles[name];
             const folders = _getFolders();
             Object.values(folders).forEach(fd => {
@@ -8671,6 +8672,11 @@
             });
             if (activeExt === '_media_' + name) {
                 closeMediaPanel();
+            }
+            // ── FIX: also remove from IndexedDB so it doesn't come back after refresh ──
+            if (mf && mf._idb) {
+                const idbKey = activeProj + '::' + name;
+                _csIDB.del(idbKey).catch(() => {});
             }
             saveData();
             renderCustomFiles();
@@ -18482,7 +18488,7 @@ var _markedPatchInterval = setInterval(function() {
             <i class="fas fa-lock" style="font-size:9px;color:var(--accent);"></i><span id="hubAuthorLockedName"></span>
           </div>
         </div>
-        <div id="hubAuthorLockedNote" style="display:none;font-size:10px;color:var(--text-dim);margin-top:4px;"><i class="fas fa-info-circle"></i> اسمك مرتبط بحسابك ولا يمكن تغييره</div>
+        <div id="hubAuthorLockedNote" style="display:none;font-size:10px;color:var(--text-dim);margin-top:4px;"><i class="fas fa-info-circle"></i> Your name is linked to your account and cannot be changed</div>
       </div>
       <!-- Cover Image -->
       <div>
@@ -18493,7 +18499,7 @@ var _markedPatchInterval = setInterval(function() {
         </div>
         <label id="hubPublishCoverLabel" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg);border:1px dashed var(--border);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--text-dim);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
           <i class="fas fa-image" style="color:#f59e0b;font-size:14px;"></i>
-          <span>اختر صورة غلاف للمشروع</span>
+          <span>Choose a cover image for the project</span>
           <input type="file" id="hubPublishCoverInput" accept="image/*" style="display:none;" onchange="hubHandlePublishCover(this)">
         </label>
       </div>
@@ -18565,7 +18571,7 @@ var _markedPatchInterval = setInterval(function() {
         </div>
         <label id="hubEditCoverLabel" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--bg);border:1px dashed var(--border);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--text-dim);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
           <i class="fas fa-image" style="color:#f59e0b;font-size:14px;"></i>
-          <span>اختر صورة غلاف للمشروع</span>
+          <span>Choose a cover image for the project</span>
           <input type="file" id="hubEditCoverInput" accept="image/*" style="display:none;" onchange="hubHandleEditCover(this)">
         </label>
       </div>
@@ -19107,8 +19113,8 @@ window.hubOpenInIDE = function() {
   if (!p.code) { hubShowToast('No source code available', 'error'); return; }
 
   const projName = 'Hub_' + p.title.replace(/[^a-zA-Z0-9]/g,'_');
-  
-  // Create project in the IDE if db exists
+
+  // Create/update project in the IDE db
   if (typeof db !== 'undefined') {
     if (!db[projName]) {
       db[projName] = { html: '', css: '', js: '', _customFiles: {}, _folders: {} };
@@ -19117,18 +19123,20 @@ window.hubOpenInIDE = function() {
     db[projName].css  = p.code.css  || '';
     db[projName].js   = p.code.js   || '';
 
-    if (typeof saveProject === 'function') saveProject();
-    if (typeof switchProject === 'function') {
-      switchProject(projName);
-    } else if (typeof renderProjects === 'function') {
-      activeProj = projName;
-      renderProjects();
-      if (typeof switchFile === 'function') switchFile('html');
-      if (typeof updatePreview === 'function') updatePreview();
-    }
-  }
+    // Set as active project
+    activeProj = projName;
 
-  // Downloads already incremented in Firebase via hubOpenDetail
+    // Save to localStorage so it persists after refresh
+    if (typeof saveData === 'function') saveData();
+
+    // Update sidebar project list
+    if (typeof updateProjectList === 'function') updateProjectList();
+
+    // Switch to HTML tab and refresh preview
+    if (typeof switchFile === 'function') switchFile('html');
+    if (typeof updatePreview === 'function') updatePreview();
+    if (typeof renderCustomFiles === 'function') renderCustomFiles();
+  }
 
   closeHubDetail();
   closeHub();
