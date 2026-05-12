@@ -20021,10 +20021,10 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
 
   async function _loadProfileData() {
     try {
-      const fbDB = await hubWaitForFB();
+      const fbDB = await window._hubWaitForFB();
 
       // Load all hub projects
-      const snap = await fbDB.ref(HUB_FB_PATH).once('value');
+      const snap = await fbDB.ref(window._hubFbPath).once('value');
       const all  = [];
       snap.forEach(c => { all.push(c.val()); });
 
@@ -20041,8 +20041,8 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
       const totalDownloads = userProjects.reduce((s,p) => s + (Number(p.downloads)||0), 0);
 
       document.getElementById('hubProfileProjects').textContent      = userProjects.length;
-      document.getElementById('hubProfileTotalStars').textContent    = fmtNum(Math.round(totalStars * 10) / 10);
-      document.getElementById('hubProfileTotalDownloads').textContent = fmtNum(totalDownloads);
+      document.getElementById('hubProfileTotalStars').textContent    = window._hubFmtNum(Math.round(totalStars * 10) / 10);
+      document.getElementById('hubProfileTotalDownloads').textContent = window._hubFmtNum(totalDownloads);
 
       // Load followers/following counts
       if (_profileOwnerUid) {
@@ -20052,8 +20052,8 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
         ]);
         const followersCount = followersSnap.exists() ? Object.keys(followersSnap.val()).length : 0;
         const followingCount = followingSnap.exists() ? Object.keys(followingSnap.val()).length : 0;
-        document.getElementById('hubProfileFollowers').textContent = fmtNum(followersCount);
-        document.getElementById('hubProfileFollowing').textContent = fmtNum(followingCount);
+        document.getElementById('hubProfileFollowers').textContent = window._hubFmtNum(followersCount);
+        document.getElementById('hubProfileFollowing').textContent = window._hubFmtNum(followingCount);
 
         // Follow button state
         const currentUser = window._fbCurrentUser;
@@ -20076,7 +20076,7 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
       list.innerHTML = userProjects.map(p => {
         const emoji = p.emoji || '🚀';
         const stars = Number(p.stars||0).toFixed(1);
-        const dls   = fmtNum(p.downloads||0);
+        const dls   = window._hubFmtNum(p.downloads||0);
         return '<div class="hub-profile-proj-item" onclick="closeHubProfile();setTimeout(()=>hubOpenDetail(\'' + p.id + '\'),200)">' +
           '<div class="hub-profile-proj-emoji">' + emoji + '</div>' +
           '<div class="hub-profile-proj-info">' +
@@ -20108,13 +20108,13 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
   window.hubToggleFollow = async function() {
     const currentUser = window._fbCurrentUser;
     if (!currentUser) {
-      hubShowToast('Sign in to follow users', 'error');
+      window._hubShowToast('Sign in to follow users', 'error');
       return;
     }
     if (!_profileOwnerUid) return;
 
     try {
-      const fbDB = await hubWaitForFB();
+      const fbDB = await window._hubWaitForFB();
       const followerRef = fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid + '/' + currentUser.uid);
       const followingRef = fbDB.ref(FOLLOW_PATH + '/following/' + currentUser.uid  + '/' + _profileOwnerUid);
       const snap = await followerRef.once('value');
@@ -20123,11 +20123,11 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
       if (isNowFollowing) {
         await followerRef.set({ at: Date.now(), name: currentUser.displayName || currentUser.email || 'Anonymous' });
         await followingRef.set({ at: Date.now() });
-        hubShowToast('Now following ' + _profileAuthorName + ' 🎉', 'success');
+        window._hubShowToast('Now following ' + _profileAuthorName + ' 🎉', 'success');
       } else {
         await followerRef.remove();
         await followingRef.remove();
-        hubShowToast('Unfollowed ' + _profileAuthorName, 'info');
+        window._hubShowToast('Unfollowed ' + _profileAuthorName, 'info');
       }
 
       _setFollowBtnState(isNowFollowing);
@@ -20135,11 +20135,11 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
       // Update count live
       const countSnap = await fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid).once('value');
       const count = countSnap.exists() ? Object.keys(countSnap.val()).length : 0;
-      document.getElementById('hubProfileFollowers').textContent = fmtNum(count);
+      document.getElementById('hubProfileFollowers').textContent = window._hubFmtNum(count);
 
     } catch(e) {
       console.error('[Profile] follow error', e);
-      hubShowToast('Action failed — check connection', 'error');
+      window._hubShowToast('Action failed — check connection', 'error');
     }
   };
 
