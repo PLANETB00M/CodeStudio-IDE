@@ -17962,7 +17962,78 @@ var _markedPatchInterval = setInterval(function() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.15s;
 }
+.hub-card-author-name:hover { color: var(--accent); }
+/* ── Hub Profile Overlay ── */
+#hubProfileOverlay {
+  display: none; position: fixed; inset: 0; z-index: 99999;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  align-items: center; justify-content: center;
+}
+#hubProfileOverlay.open { display: flex; }
+.hub-profile-card {
+  background: var(--sidebar); border: 1px solid var(--border);
+  border-radius: 20px; width: 520px; max-width: 95vw; max-height: 85vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5); position: relative;
+}
+.hub-profile-banner {
+  height: 90px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.35), rgba(var(--accent-rgb),0.08));
+  flex-shrink: 0;
+}
+.hub-profile-close-btn {
+  position: absolute; top: 10px; right: 14px;
+  background: rgba(0,0,0,0.3); border: none; color: #fff;
+  border-radius: 8px; width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; z-index: 2;
+}
+.hub-profile-close-btn:hover { background: rgba(0,0,0,0.55); }
+.hub-profile-avatar-wrap { position: absolute; top: 58px; left: 22px; }
+.hub-profile-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 3px solid var(--sidebar);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 900; color: #fff; overflow: hidden;
+}
+.hub-profile-avatar img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
+.hub-profile-info { padding: 40px 22px 14px; flex-shrink: 0; }
+.hub-profile-name { font-family:'Outfit',sans-serif; font-size:20px; font-weight:900; color:var(--text); }
+.hub-profile-handle { font-size:11px; color:var(--text-dim); margin-top:2px; }
+.hub-profile-stats-row { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
+.hub-profile-stat {
+  display:flex; flex-direction:column; align-items:center;
+  background:var(--bg); border:1px solid var(--border); border-radius:10px;
+  padding:10px 16px; min-width:70px;
+}
+.hub-profile-stat-num { font-family:'Outfit',sans-serif; font-size:18px; font-weight:900; color:var(--text); }
+.hub-profile-stat-label { font-size:10px; color:var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+.hub-profile-follow-btn {
+  margin-top:14px; padding:8px 22px; border-radius:10px; border:none;
+  font-size:13px; font-weight:800; cursor:pointer;
+  background:linear-gradient(135deg,rgba(var(--accent-rgb),1),rgba(var(--accent-rgb),0.75));
+  color:#fff; transition:all 0.2s; display:flex; align-items:center; gap:6px;
+}
+.hub-profile-follow-btn:hover { transform:translateY(-1px); filter:brightness(1.1); }
+.hub-profile-follow-btn.following { background:var(--bg); border:1px solid var(--border); color:var(--text-dim); }
+.hub-profile-projects { padding:0 22px 20px; overflow-y:auto; flex:1; }
+.hub-profile-projects-title { font-size:11px; font-weight:800; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; border-top:1px solid var(--border); padding-top:14px; }
+.hub-profile-proj-item {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  border-radius:10px; border:1px solid var(--border); background:var(--bg);
+  margin-bottom:8px; cursor:pointer; transition:border-color 0.15s,background 0.15s;
+}
+.hub-profile-proj-item:hover { border-color:rgba(var(--accent-rgb),0.4); background:rgba(var(--accent-rgb),0.05); }
+.hub-profile-proj-emoji { font-size:20px; flex-shrink:0; }
+.hub-profile-proj-info { flex:1; min-width:0; }
+.hub-profile-proj-name { font-size:13px; font-weight:800; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hub-profile-proj-desc { font-size:11px; color:var(--text-dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hub-profile-proj-stats { display:flex; gap:8px; align-items:center; font-size:10px; color:var(--text-dim); flex-shrink:0; }
+.hub-profile-empty { text-align:center; color:var(--text-dim); font-size:13px; padding:30px 0; }
+
 .hub-card-stats {
   display: flex;
   align-items: center;
@@ -18875,7 +18946,7 @@ function hubCardHTML(p) {
               ? `<div class="hub-card-avatar" style="background:transparent;overflow:hidden;padding:0;"><img src="${p.authorPhotoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="" onerror="this.parentNode.style.background='${p.authorColor||'#3b82f6'}';this.parentNode.textContent='${(p.author||'?')[0].toUpperCase()}';"></div>`
               : `<div class="hub-card-avatar" style="background:${p.authorColor||'#3b82f6'};">${(p.author||'?')[0].toUpperCase()}</div>`
             }
-            <div class="hub-card-author-name">${p.author||'Anonymous'}</div>
+            <div class="hub-card-author-name" onclick="event.stopPropagation();hubOpenProfile('${p.ownerUid||''}','${(p.author||'Anonymous').replace(/'/g,'\\\'')}',\`${p.authorColor||'#3b82f6'}\`,'${p.authorPhotoURL||''}')">${p.author||'Anonymous'}</div>
           </div>
           <div class="hub-card-stats">
             <span class="hub-stat stars"><i class="fas fa-star"></i>${starsDisp}</span>
@@ -18907,7 +18978,7 @@ window.hubOpenDetail = function(id) {
   document.getElementById('hubDetailAvatar').style.border = `1px solid rgba(var(--accent-rgb),0.3)`;
   document.getElementById('hubDetailAvatar').innerHTML = `<i class="fas ${_tagIconMap[_tag0]||'fa-code'}" style="font-size:18px;color:var(--accent);"></i>`;
   document.getElementById('hubDetailTitle').textContent = p.title;
-  document.getElementById('hubDetailMeta').innerHTML = `by <b>${p.author}</b> · ${timeAgo(p.publishedAt)}`;
+  document.getElementById('hubDetailMeta').innerHTML = `by <b style="cursor:pointer;color:var(--accent);" onclick="hubOpenProfile('${p.ownerUid||''}','${(p.author||'Anonymous').replace(/'/g,"\\'")}','${p.authorColor||'#3b82f6'}','${p.authorPhotoURL||''}')">${p.author}</b> · ${timeAgo(p.publishedAt)}`;
 
   // Preview
   const previewImgs = p.previewImages || [];
@@ -19875,7 +19946,224 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
 });
 
 })();
+
+// ══════════════════════════════════════════════════════
+//  HUB PROFILE SYSTEM
+// ══════════════════════════════════════════════════════
+(function() {
+  const FOLLOW_PATH = 'hub/follows';
+  let _profileOwnerUid = null;
+  let _profileAuthorName = null;
+
+  // ── Open profile by ownerUid or author name ──────────
+  window.hubOpenProfile = function(ownerUid, authorName, authorColor, authorPhotoURL) {
+    _profileOwnerUid  = ownerUid  || null;
+    _profileAuthorName = authorName || 'Anonymous';
+
+    // Set banner accent color
+    document.getElementById('hubProfileBanner').style.background =
+      'linear-gradient(135deg, ' + (authorColor||'rgba(var(--accent-rgb),0.35)') + '55, rgba(0,0,0,0.1))';
+
+    // Avatar
+    const av = document.getElementById('hubProfileAvatar');
+    if (authorPhotoURL) {
+      av.style.background = 'transparent';
+      av.innerHTML = '<img src="' + authorPhotoURL + '" onerror="this.parentNode.style.background='' + (authorColor||'#3b82f6') + '';this.parentNode.textContent='' + (_profileAuthorName[0]||'?').toUpperCase() + '';">';
+    } else {
+      av.style.background = authorColor || '#3b82f6';
+      av.textContent = (_profileAuthorName[0] || '?').toUpperCase();
+    }
+
+    document.getElementById('hubProfileName').textContent = _profileAuthorName;
+    document.getElementById('hubProfileHandle').textContent = ownerUid ? '@' + ownerUid.slice(0,8) + '…' : 'Guest Author';
+
+    // Reset stats
+    document.getElementById('hubProfileProjects').textContent   = '…';
+    document.getElementById('hubProfileFollowers').textContent  = '…';
+    document.getElementById('hubProfileFollowing').textContent  = '…';
+    document.getElementById('hubProfileTotalStars').textContent = '…';
+    document.getElementById('hubProfileTotalDownloads').textContent = '…';
+    document.getElementById('hubProfileProjectsList').innerHTML = '<div class="hub-profile-empty"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+
+    // Hide follow btn for own profile or guests without uid
+    const followBtn = document.getElementById('hubProfileFollowBtn');
+    const currentUser = window._fbCurrentUser;
+    const isOwnProfile = currentUser && ownerUid && currentUser.uid === ownerUid;
+    followBtn.style.display = (ownerUid && !isOwnProfile) ? 'flex' : 'none';
+
+    document.getElementById('hubProfileOverlay').classList.add('open');
+
+    // Load data from Firebase
+    _loadProfileData();
+  };
+
+  window.closeHubProfile = function() {
+    document.getElementById('hubProfileOverlay').classList.remove('open');
+    _profileOwnerUid = null;
+    _profileAuthorName = null;
+  };
+
+  // Backdrop click
+  document.getElementById('hubProfileOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeHubProfile();
+  });
+
+  async function _loadProfileData() {
+    try {
+      const fbDB = await hubWaitForFB();
+
+      // Load all hub projects
+      const snap = await fbDB.ref(HUB_FB_PATH).once('value');
+      const all  = [];
+      snap.forEach(c => { all.push(c.val()); });
+
+      // Filter projects for this author
+      let userProjects;
+      if (_profileOwnerUid) {
+        userProjects = all.filter(p => p.ownerUid === _profileOwnerUid);
+      } else {
+        userProjects = all.filter(p => (p.author || 'Anonymous') === _profileAuthorName && !p.ownerUid);
+      }
+
+      // Compute stats
+      const totalStars     = userProjects.reduce((s,p) => s + (Number(p.stars)||0), 0);
+      const totalDownloads = userProjects.reduce((s,p) => s + (Number(p.downloads)||0), 0);
+
+      document.getElementById('hubProfileProjects').textContent      = userProjects.length;
+      document.getElementById('hubProfileTotalStars').textContent    = fmtNum(Math.round(totalStars * 10) / 10);
+      document.getElementById('hubProfileTotalDownloads').textContent = fmtNum(totalDownloads);
+
+      // Load followers/following counts
+      if (_profileOwnerUid) {
+        const [followersSnap, followingSnap] = await Promise.all([
+          fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid).once('value'),
+          fbDB.ref(FOLLOW_PATH + '/following/' + _profileOwnerUid).once('value'),
+        ]);
+        const followersCount = followersSnap.exists() ? Object.keys(followersSnap.val()).length : 0;
+        const followingCount = followingSnap.exists() ? Object.keys(followingSnap.val()).length : 0;
+        document.getElementById('hubProfileFollowers').textContent = fmtNum(followersCount);
+        document.getElementById('hubProfileFollowing').textContent = fmtNum(followingCount);
+
+        // Follow button state
+        const currentUser = window._fbCurrentUser;
+        if (currentUser && currentUser.uid !== _profileOwnerUid) {
+          const myFollowSnap = await fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid + '/' + currentUser.uid).once('value');
+          _setFollowBtnState(myFollowSnap.exists());
+        }
+      } else {
+        document.getElementById('hubProfileFollowers').textContent = '—';
+        document.getElementById('hubProfileFollowing').textContent = '—';
+      }
+
+      // Render projects list
+      const list = document.getElementById('hubProfileProjectsList');
+      if (!userProjects.length) {
+        list.innerHTML = '<div class="hub-profile-empty">No published projects yet</div>';
+        return;
+      }
+      userProjects.sort((a,b) => (b.publishedAt||0) - (a.publishedAt||0));
+      list.innerHTML = userProjects.map(p => {
+        const emoji = p.emoji || '🚀';
+        const stars = Number(p.stars||0).toFixed(1);
+        const dls   = fmtNum(p.downloads||0);
+        return '<div class="hub-profile-proj-item" onclick="closeHubProfile();setTimeout(()=>hubOpenDetail(\'' + p.id + '\'),200)">' +
+          '<div class="hub-profile-proj-emoji">' + emoji + '</div>' +
+          '<div class="hub-profile-proj-info">' +
+            '<div class="hub-profile-proj-name">' + (p.title||'Untitled') + '</div>' +
+            '<div class="hub-profile-proj-desc">' + (p.desc||'') + '</div>' +
+          '</div>' +
+          '<div class="hub-profile-proj-stats">' +
+            '<span><i class="fas fa-star" style="color:#f59e0b;"></i> ' + stars + '</span>' +
+            '<span><i class="fas fa-download" style="color:#10b981;"></i> ' + dls + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+    } catch(e) {
+      console.error('[Profile] load error', e);
+      document.getElementById('hubProfileProjectsList').innerHTML = '<div class="hub-profile-empty">Failed to load profile</div>';
+    }
+  }
+
+  function _setFollowBtnState(isFollowing) {
+    const btn   = document.getElementById('hubProfileFollowBtn');
+    const icon  = document.getElementById('hubProfileFollowIcon');
+    const label = document.getElementById('hubProfileFollowLabel');
+    btn.classList.toggle('following', isFollowing);
+    icon.className  = isFollowing ? 'fas fa-user-check' : 'fas fa-user-plus';
+    label.textContent = isFollowing ? 'Following' : 'Follow';
+  }
+
+  window.hubToggleFollow = async function() {
+    const currentUser = window._fbCurrentUser;
+    if (!currentUser) {
+      hubShowToast('Sign in to follow users', 'error');
+      return;
+    }
+    if (!_profileOwnerUid) return;
+
+    try {
+      const fbDB = await hubWaitForFB();
+      const followerRef = fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid + '/' + currentUser.uid);
+      const followingRef = fbDB.ref(FOLLOW_PATH + '/following/' + currentUser.uid  + '/' + _profileOwnerUid);
+      const snap = await followerRef.once('value');
+      const isNowFollowing = !snap.exists();
+
+      if (isNowFollowing) {
+        await followerRef.set({ at: Date.now(), name: currentUser.displayName || currentUser.email || 'Anonymous' });
+        await followingRef.set({ at: Date.now() });
+        hubShowToast('Now following ' + _profileAuthorName + ' 🎉', 'success');
+      } else {
+        await followerRef.remove();
+        await followingRef.remove();
+        hubShowToast('Unfollowed ' + _profileAuthorName, 'info');
+      }
+
+      _setFollowBtnState(isNowFollowing);
+
+      // Update count live
+      const countSnap = await fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid).once('value');
+      const count = countSnap.exists() ? Object.keys(countSnap.val()).length : 0;
+      document.getElementById('hubProfileFollowers').textContent = fmtNum(count);
+
+    } catch(e) {
+      console.error('[Profile] follow error', e);
+      hubShowToast('Action failed — check connection', 'error');
+    }
+  };
+
+})();
 </script>
 
+
+<!-- ── HUB PROFILE OVERLAY ── -->
+<div id="hubProfileOverlay">
+  <div class="hub-profile-card">
+    <div class="hub-profile-banner" id="hubProfileBanner"></div>
+    <button class="hub-profile-close-btn" onclick="closeHubProfile()"><i class="fas fa-times"></i></button>
+    <div class="hub-profile-avatar-wrap">
+      <div class="hub-profile-avatar" id="hubProfileAvatar"></div>
+    </div>
+    <div class="hub-profile-info">
+      <div class="hub-profile-name" id="hubProfileName"></div>
+      <div class="hub-profile-handle" id="hubProfileHandle"></div>
+      <div class="hub-profile-stats-row">
+        <div class="hub-profile-stat"><span class="hub-profile-stat-num" id="hubProfileProjects">0</span><span class="hub-profile-stat-label">Projects</span></div>
+        <div class="hub-profile-stat"><span class="hub-profile-stat-num" id="hubProfileFollowers">0</span><span class="hub-profile-stat-label">Followers</span></div>
+        <div class="hub-profile-stat"><span class="hub-profile-stat-num" id="hubProfileFollowing">0</span><span class="hub-profile-stat-label">Following</span></div>
+        <div class="hub-profile-stat"><span class="hub-profile-stat-num" id="hubProfileTotalStars">0</span><span class="hub-profile-stat-label">Stars</span></div>
+        <div class="hub-profile-stat"><span class="hub-profile-stat-num" id="hubProfileTotalDownloads">0</span><span class="hub-profile-stat-label">Downloads</span></div>
+      </div>
+      <button class="hub-profile-follow-btn" id="hubProfileFollowBtn" onclick="hubToggleFollow()">
+        <i class="fas fa-user-plus" id="hubProfileFollowIcon"></i>
+        <span id="hubProfileFollowLabel">Follow</span>
+      </button>
+    </div>
+    <div class="hub-profile-projects">
+      <div class="hub-profile-projects-title"><i class="fas fa-layer-group" style="margin-right:5px;"></i>Published Projects</div>
+      <div id="hubProfileProjectsList"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
