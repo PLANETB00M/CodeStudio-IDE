@@ -20140,15 +20140,17 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
     const isLoggedInWithGoogle = currentUser && currentUser.providerData &&
       currentUser.providerData.some(p => p.providerId === 'google.com');
     if (!isLoggedInWithGoogle) {
-      hubShowToast('Sign in with Google to follow users', 'error');
       try {
         const u = await signInWithFirebaseGoogle();
-        if (!u) return;
-        // Wait a moment for _fbCurrentUser to be updated by auth state listener
-        await new Promise(r => setTimeout(r, 500));
-        currentUser = window._fbCurrentUser;
-        if (!currentUser) return;
-      } catch(e) { return; }
+        if (!u) { hubShowToast('Sign in required to follow users', 'error'); return; }
+        // Poll for _fbCurrentUser instead of a fixed wait (up to 4s)
+        for (let i = 0; i < 20; i++) {
+          currentUser = window._fbCurrentUser;
+          if (currentUser) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+        if (!currentUser) { hubShowToast('Sign-in timed out, please try again', 'error'); return; }
+      } catch(e) { hubShowToast('Sign-in failed', 'error'); return; }
     }
     if (!_profileOwnerUid) return;
 
