@@ -258,7 +258,7 @@
 
         /* Layout */
         .workspace { flex: 1; display: flex; overflow: hidden; position: relative; }
-        .activity-bar { width: 50px; background: var(--toolbar); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding-top: 10px; z-index: 20; flex-shrink: 0; height: 100%; overflow: hidden; }
+        .activity-bar { width: 50px; background: var(--toolbar); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding-top: 10px; z-index: 20; flex-shrink: 0; }
         .activity-icon { width: 100%; height: 50px; display: flex; justify-content: center; align-items: center; color: var(--text-dim); cursor: pointer; font-size: 20px; transition: 0.2s; border-left: 3px solid transparent; }
         .activity-icon:hover { color: var(--text); background: var(--accent-glow); }
         .activity-icon.active { color: var(--accent); border-left-color: var(--accent); }
@@ -1801,8 +1801,6 @@
             border-right: 1px solid var(--border) !important;
             gap: 2px;
             padding-top: 12px !important;
-            height: 100% !important;
-            overflow: hidden !important;
         }
         .activity-icon {
             width: 44px !important;
@@ -4741,27 +4739,21 @@
 
     <div class="workspace" id="workspaceContainer">
         <div class="activity-bar">
-            <!-- Top icon group: takes up natural space -->
-            <div style="display:flex; flex-direction:column; align-items:center; width:100%; gap:2px; flex-shrink:0;">
-                <div class="activity-icon" id="actExplorer" onclick="switchSidebarTab('explorer')" title="Explorer"><i class="fas fa-folder-tree"></i></div>
-                <div class="activity-icon" id="actSearch" onclick="switchSidebarTab('search')" title="Search (Ctrl+H)"><i class="fas fa-magnifying-glass"></i></div>
-                <div class="activity-icon" id="actCollab" onclick="toggleCollabModal()" title="Live Collab" style="position:relative;">
-                    <i class="fas fa-users-line"></i>
-                    <span id="serverRoomBadge"></span>
-                </div>
-                <div class="activity-icon" id="actTools" onclick="switchSidebarTab('tools')" title="Dev Tools"><i class="fas fa-screwdriver-wrench"></i></div>
-                <div class="activity-icon" id="actLibraries" onclick="switchSidebarTab('libraries')" title="Libraries"><i class="fas fa-box-open"></i></div>
-                <div class="activity-icon" id="actGroqAI" onclick="switchSidebarTab('groqai')" title="Groq AI — Analyze Code"><i class="fas fa-robot"></i></div>
-                <div class="activity-icon" id="actHub" onclick="openHub()" title="CodeStudio Hub — Browse &amp; Share Projects" style="position:relative;"><i class="fas fa-store"></i><span id="hubNavBadge" style="position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent);border-radius:50%;display:none;"></span></div>
+            <div class="activity-icon" id="actExplorer" onclick="switchSidebarTab('explorer')" title="Explorer"><i class="fas fa-folder-tree"></i></div>
+            <div class="activity-icon" id="actSearch" onclick="switchSidebarTab('search')" title="Search (Ctrl+H)"><i class="fas fa-magnifying-glass"></i></div>
+            <div class="activity-icon" id="actCollab" onclick="toggleCollabModal()" title="Live Collab" style="position:relative;">
+                <i class="fas fa-users-line"></i>
+                <span id="serverRoomBadge"></span>
             </div>
-            <!-- Bottom group: pushed to bottom safely, never overlaps icons above -->
-            <div style="display:flex; flex-direction:column; align-items:center; width:100%; margin-top:auto; flex-shrink:0;">
-                <div id="syncDisplay" onclick="toggleAuthModal()" title="Account" style="width:100%; height:50px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;">
-                    <div class="user-pill-avatar" id="navAvatarPill" style="background:transparent; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; color:var(--text-dim); flex-shrink:0; overflow:hidden; transition:0.2s;"><i class="fas fa-circle-user"></i></div>
-                    <span id="navUserLabel" style="display:none;"></span>
-                </div>
-                <div class="activity-icon" onclick="toggleSettingsModal()" title="Settings" style="margin-bottom:16px;"><i class="fas fa-sliders"></i></div>
+            <div class="activity-icon" id="actTools" onclick="switchSidebarTab('tools')" title="Dev Tools"><i class="fas fa-screwdriver-wrench"></i></div>
+            <div class="activity-icon" id="actLibraries" onclick="switchSidebarTab('libraries')" title="Libraries"><i class="fas fa-box-open"></i></div>
+            <div class="activity-icon" id="actGroqAI" onclick="switchSidebarTab('groqai')" title="Groq AI — Analyze Code"><i class="fas fa-robot"></i></div>
+            <div class="activity-icon" id="actHub" onclick="openHub()" title="CodeStudio Hub — Browse &amp; Share Projects" style="position:relative;"><i class="fas fa-store"></i><span id="hubNavBadge" style="position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent);border-radius:50%;display:none;"></span></div>
+            <div id="syncDisplay" onclick="toggleAuthModal()" title="Account" style="width:100%; height:50px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; margin-top:auto;">
+                <div class="user-pill-avatar" id="navAvatarPill" style="background:transparent; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; color:var(--text-dim); flex-shrink:0; overflow:hidden; transition:0.2s;"><i class="fas fa-circle-user"></i></div>
+                <span id="navUserLabel" style="display:none;"></span>
             </div>
+            <div class="activity-icon" onclick="toggleSettingsModal()" title="Settings" style="margin-bottom:16px;"><i class="fas fa-sliders"></i></div>
         </div>
 
         <aside class="sidebar" id="sidePanel">
@@ -5846,7 +5838,7 @@
             return new Promise(resolve => {
                 const overlay = document.getElementById('customModalOverlay');
                 document.getElementById('customModalTitle').innerText = opts.title || 'Message';
-                document.getElementById('customModalMessage').innerHTML = opts.msg || '';
+                document.getElementById('customModalMessage').innerText = opts.msg || '';
                 
                 const input = document.getElementById('customModalInput');
                 if(opts.type === 'prompt') {
@@ -13354,7 +13346,7 @@ localStorage.removeItem('key');`);
                 });
                 if (r.ok || r.status === 429) {
                     if (badge) { badge.textContent = '● READY'; badge.style.color = '#10b981'; badge.style.borderColor = 'rgba(16,185,129,0.4)'; badge.style.background = 'rgba(16,185,129,0.1)'; }
-                    if (note)  note.innerHTML = '<i class="fas fa-circle-check"></i> Groq is connected and ready to use!';
+                    if (note)  note.textContent = '<i class="fas fa-circle-check"></i> Groq is connected and ready to use!';
                     groqRefreshSideStatus();
                     return true;
                 } else if (r.status === 401) {
@@ -13365,12 +13357,12 @@ localStorage.removeItem('key');`);
             } catch(err) {
                 if (err.name === 'TypeError' || err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('failed')) {
                     if (badge) { badge.textContent = '● SAVED'; badge.style.color = '#10b981'; badge.style.borderColor = 'rgba(16,185,129,0.4)'; badge.style.background = 'rgba(16,185,129,0.1)'; }
-                    if (note)  note.innerHTML = '<i class="fas fa-circle-check"></i> Key saved! It will be used when making requests.';
+                    if (note)  note.textContent = '<i class="fas fa-circle-check"></i> Key saved! It will be used when making requests.';
                     groqRefreshSideStatus();
                     return true;
                 }
                 if (badge) { badge.textContent = '● ERROR'; badge.style.color = '#ef4444'; badge.style.borderColor = 'rgba(239,68,68,0.4)'; badge.style.background = 'rgba(239,68,68,0.1)'; }
-                if (note)  note.innerHTML = '<i class="fas fa-circle-xmark"></i> ' + err.message;
+                if (note)  note.textContent = '<i class="fas fa-circle-xmark"></i> ' + err.message;
                 return false;
             }
         }
@@ -14345,7 +14337,7 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
                 const drivePanel = document.getElementById('driveActionsPanel');
                 if (drivePanel) drivePanel.style.display = userData.authType === 'gdrive' ? '' : 'none';
             } else {
-                if (syncEl) syncEl.innerHTML = binId ? `<i class="fas fa-cloud"></i> Saved locally · last saved ${savedAt}` : '<i class="fas fa-triangle-exclamation"></i> Not yet saved';
+                if (syncEl) syncEl.textContent = binId ? `<i class="fas fa-cloud"></i> Saved locally · last saved ${savedAt}` : '<i class="fas fa-triangle-exclamation"></i> Not yet saved';
                 if (copyTokenBtn) copyTokenBtn.style.display = '';
                 if (tokenHint)    tokenHint.style.display    = '';
                 // Hide Drive push/load panel for non-gdrive users
@@ -14524,7 +14516,7 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
                 if (userData.authType === 'gdrive' || userData.authType === 'firebase') {
                     if (syncEl) syncEl.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 87.3 78' width='11' height='11' style='vertical-align:middle;margin-right:4px;'><path d='m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z' fill='#0066da'/><path d='m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z' fill='#00ac47'/><path d='m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z' fill='#ea4335'/><path d='m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z' fill='#00832d'/><path d='m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z' fill='#2684fc'/><path d='m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z' fill='#ffba00'/></svg> Synced to Google Drive · ${new Date().toLocaleTimeString()}`;
                 } else {
-                    if (syncEl) syncEl.innerHTML = `<i class="fas fa-floppy-disk"></i> Saved locally · ${new Date().toLocaleTimeString()}`;
+                    if (syncEl) syncEl.textContent = `<i class="fas fa-floppy-disk"></i> Saved locally · ${new Date().toLocaleTimeString()}`;
                 }
             }, 3000);
         }
@@ -17612,7 +17604,7 @@ var _markedPatchInterval = setInterval(function() {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 1000003;
+  z-index: 99990;
   background: var(--bg, #0f0f13);
   flex-direction: column;
   overflow: hidden;
@@ -17983,7 +17975,7 @@ var _markedPatchInterval = setInterval(function() {
 .hub-card-author-name:hover { color: var(--accent); }
 /* ── Hub Profile Overlay ── */
 #hubProfileOverlay {
-  display: none; position: fixed; inset: 0; z-index: 1000010;
+  display: none; position: fixed; inset: 0; z-index: 99999;
   background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
   align-items: center; justify-content: center;
 }
@@ -18031,7 +18023,6 @@ var _markedPatchInterval = setInterval(function() {
   font-size:13px; font-weight:800; cursor:pointer;
   background:linear-gradient(135deg,rgba(var(--accent-rgb),1),rgba(var(--accent-rgb),0.75));
   color:#fff; transition:all 0.2s; display:flex; align-items:center; gap:6px;
-  pointer-events: auto; position: relative; z-index: 2;
 }
 .hub-profile-follow-btn:hover { transform:translateY(-1px); filter:brightness(1.1); }
 .hub-profile-follow-btn.following { background:var(--bg); border:1px solid var(--border); color:var(--text-dim); }
@@ -18073,7 +18064,7 @@ var _markedPatchInterval = setInterval(function() {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 1000005;
+  z-index: 99995;
   background: rgba(0,0,0,0.7);
   backdrop-filter: blur(6px);
   align-items: center;
@@ -18183,7 +18174,7 @@ var _markedPatchInterval = setInterval(function() {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 1000006;
+  z-index: 99996;
   background: rgba(0,0,0,0.75);
   backdrop-filter: blur(8px);
   align-items: center;
@@ -18460,7 +18451,7 @@ var _markedPatchInterval = setInterval(function() {
 </div>
 
 <!-- ══ HUB REPORT OVERLAY ══ -->
-<div id="hubReportOverlay" style="display:none;position:fixed;inset:0;z-index:1000007;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+<div id="hubReportOverlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
   <div style="background:var(--toolbar,#18181b);border:1px solid rgba(245,158,11,0.25);border-radius:20px;width:min(460px,94vw);padding:0;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6);">
     <!-- Header -->
     <div style="padding:18px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
@@ -18558,7 +18549,7 @@ var _markedPatchInterval = setInterval(function() {
         <div style="display:flex;gap:6px;flex-wrap:wrap;" id="hubTagPicker">
           <button class="hub-tag-filter" id="hpub-game"  onclick="hubTogglePublishTag('game')">Game</button>
           <button class="hub-tag-filter" id="hpub-animation" onclick="hubTogglePublishTag('animation')">Animation</button>
-          <button class="hub-tag-filter" id="hpub-tool"  onclick="hubTogglePublishTag('tool')"><i class="fas fa-wrench"></i> Tool</button>
+          <button class="hub-tag-filter" id="hpub-tool"  onclick="hubTogglePublishTag('tool')">🛠 Tool</button>
           <button class="hub-tag-filter" id="hpub-art"   onclick="hubTogglePublishTag('art')"><i class="fas fa-palette"></i> Art</button>
           <button class="hub-tag-filter" id="hpub-3d"    onclick="hubTogglePublishTag('3d')"><i class="fas fa-cube"></i> 3D</button>
           <button class="hub-tag-filter" id="hpub-html"  onclick="hubTogglePublishTag('html')">HTML</button>
@@ -18608,7 +18599,7 @@ var _markedPatchInterval = setInterval(function() {
 </div>
 
 <!-- ══ HUB EDIT OVERLAY ══ -->
-<div id="hubEditOverlay" style="display:none;position:fixed;inset:0;z-index:1000007;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);overflow-y:auto;padding:40px 20px;">
+<div id="hubEditOverlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);overflow-y:auto;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:hidden;">
     <div style="padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
       <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0;"><i class="fas fa-pen"></i></div>
@@ -18682,7 +18673,6 @@ var _markedPatchInterval = setInterval(function() {
 // ── Firebase Hub Storage ────────────────────────────────
 const HUB_RATINGS_KEY = 'cs_hub_ratings';
 const HUB_FB_PATH = 'hub/projects';
-const HUB_REPORTS_PATH = 'hub/reports';
 
 // ── Admin UIDs ───────────────────────────────────────────
 const HUB_ADMIN_UIDS = new Set([
@@ -18700,20 +18690,14 @@ let hubSort = 'trending';
 let hubTag  = 'all';
 let hubCurrentProject = null;
 let hubPublishTags = [];
-let hubPublishEmoji = '';
 let hubProjectsCache = [];   // local mirror of Firebase data
 let hubFbListenerRef = null; // active Firebase listener reference
 let hubLoading = false;
 
 // ── Firebase Helpers ────────────────────────────────────
 function hubWaitForFB() {
-  return new Promise((res, rej) => {
-    var start = Date.now();
-    var check = function() {
-      if (window._fbDB) { res(window._fbDB); return; }
-      if (Date.now() - start > 8000) { rej(new Error('Firebase unavailable')); return; }
-      setTimeout(check, 100);
-    };
+  return new Promise(res => {
+    const check = () => window._fbDB ? res(window._fbDB) : setTimeout(check, 100);
     check();
   });
 }
@@ -18721,20 +18705,14 @@ function hubWaitForFB() {
 // Convert Firebase snapshot to flat array (handles comments as object)
 function hubSnapToArray(snap) {
   const data = snap.val() || {};
-  return Object.entries(data)
-    .filter(([id, p]) => p && typeof p === 'object')
-    .map(([id, p]) => ({
-      ...p,
-      id,
-      title:     p.title     || 'Untitled',
-      desc:      p.desc      || '',
-      author:    p.author    || 'Anonymous',
-      tags:      Array.isArray(p.tags) ? p.tags : [],
-      comments:  p.comments ? Object.values(p.comments) : [],
-      stars:     p.stars     || 0,
-      likes:     p.likes     || 0,
-      downloads: p.downloads || 0
-    }));
+  return Object.entries(data).map(([id, p]) => ({
+    ...p,
+    id,
+    comments: p.comments ? Object.values(p.comments) : [],
+    stars:     p.stars     || 0,
+    likes:     p.likes     || 0,
+    downloads: p.downloads || 0
+  }));
 }
 
 // Subscribe to real-time Firebase updates (called when hub opens)
@@ -18742,35 +18720,6 @@ async function hubSubscribe() {
   if (hubFbListenerRef) return; // already subscribed
   hubLoading = true;
   hubShowLoading(true);
-
-  // Helper: show error state
-  function hubShowError(msg) {
-    hubLoading = false;
-    hubShowLoading(false);
-    var emptyTitle = document.getElementById('hubEmptyTitle');
-    var emptyMsg   = document.getElementById('hubEmptyMsg');
-    var emptyState = document.getElementById('hubEmptyState');
-    if (emptyTitle) emptyTitle.innerHTML = '<i class="fas fa-wifi" style="margin-right:6px;"></i> Couldn\'t load Hub';
-    if (emptyMsg)   emptyMsg.textContent  = msg || 'Unable to load projects. Check your connection and try again.';
-    if (emptyState) emptyState.style.display = 'flex';
-    if (emptyState && !document.getElementById('hubRetryBtn')) {
-      var retryBtn = document.createElement('button');
-      retryBtn.id = 'hubRetryBtn';
-      retryBtn.className = 'hub-btn hub-btn-primary';
-      retryBtn.style.cssText = 'margin-top:14px;';
-      retryBtn.innerHTML = '<i class="fas fa-rotate-right"></i> Retry';
-      retryBtn.onclick = function() {
-        hubFbListenerRef = null;
-        retryBtn.remove();
-        if (emptyState) emptyState.style.display = 'none';
-        hubSubscribe();
-      };
-      var hubEmptyDiv = emptyState.querySelector('.hub-empty');
-      if (hubEmptyDiv) hubEmptyDiv.appendChild(retryBtn);
-    }
-  }
-
-  // Try Firebase SDK first, fall back to REST API
   try {
     const db = await hubWaitForFB();
     const ref = db.ref(HUB_FB_PATH);
@@ -18781,53 +18730,14 @@ async function hubSubscribe() {
       hubShowLoading(false);
       hubRender();
     }, err => {
-      console.warn('Hub Firebase SDK error, falling back to REST:', err);
-      // SDK listener failed — try REST API fallback
-      hubFbListenerRef = null;
-      hubFetchViaREST(hubShowError);
-    });
-  } catch(e) {
-    // Firebase SDK unavailable — try REST API directly
-    console.warn('Hub Firebase SDK unavailable, trying REST:', e);
-    hubFetchViaREST(hubShowError);
-  }
-}
-
-// Fetch hub projects via Firebase REST API (fallback when SDK listener fails)
-function hubFetchViaREST(onError) {
-  var url = 'https://codestudio-ide-17b87-default-rtdb.firebaseio.com/hub/projects.json';
-  fetch(url)
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      if (data && typeof data === 'object') {
-        hubProjectsCache = Object.entries(data)
-          .filter(function(e) { return e[1] && typeof e[1] === 'object'; })
-          .map(function(e) {
-            var id = e[0], p = e[1];
-            return Object.assign({}, p, {
-              id:        id,
-              title:     p.title     || 'Untitled',
-              desc:      p.desc      || '',
-              author:    p.author    || 'Anonymous',
-              tags:      Array.isArray(p.tags) ? p.tags : [],
-              comments:  p.comments  ? Object.values(p.comments) : [],
-              stars:     p.stars     || 0,
-              likes:     p.likes     || 0,
-              downloads: p.downloads || 0
-            });
-          });
-      }
+      console.warn('Hub Firebase read error:', err);
       hubLoading = false;
       hubShowLoading(false);
-      hubRender();
-    })
-    .catch(function(err) {
-      console.error('Hub REST fetch failed:', err);
-      if (typeof onError === 'function') onError('Could not load projects. Check your internet connection.');
     });
+  } catch(e) {
+    hubLoading = false;
+    hubShowLoading(false);
+  }
 }
 
 // Unsubscribe when hub closes (saves bandwidth)
@@ -18929,9 +18839,9 @@ function hubRender() {
   // Filter by search
   if (query) {
     projects = projects.filter(p =>
-      (p.title||'').toLowerCase().includes(query) ||
-      (p.author||'').toLowerCase().includes(query) ||
-      (p.desc||'').toLowerCase().includes(query) ||
+      p.title.toLowerCase().includes(query) ||
+      p.author.toLowerCase().includes(query) ||
+      p.desc.toLowerCase().includes(query) ||
       (p.tags && p.tags.some(t => t.includes(query)))
     );
   }
@@ -18961,7 +18871,7 @@ function hubRender() {
         </div>
         <div style="flex:1;min-width:0;">
           <div style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:900;color:var(--text);margin-bottom:6px;">${f.title}</div>
-          <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">${(f.desc||'').slice(0,120)}…</div>
+          <div style="font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">${f.desc.slice(0,120)}…</div>
           <div style="display:flex;gap:12px;align-items:center;">
             <span style="font-size:12px;color:#f59e0b;font-weight:700;"><i class="fas fa-star"></i> ${f.stars||0}</span>
             <span style="font-size:12px;color:#10b981;font-weight:700;"><i class="fas fa-download"></i> ${fmtNum(f.downloads||0)}</span>
@@ -19058,25 +18968,7 @@ function hubCardHTML(p) {
 window.hubOpenDetail = function(id) {
   const projects = hubLoad();
   const p = projects.find(x => x.id === id);
-  if (!p) {
-    // Not in cache yet — fetch directly from Firebase
-    hubWaitForFB().then(db => {
-      db.ref(`${HUB_FB_PATH}/${id}`).once('value').then(snap => {
-        if (snap.exists()) {
-          const fetched = { ...snap.val(), id: snap.key,
-            title: snap.val().title || 'Untitled', desc: snap.val().desc || '',
-            author: snap.val().author || 'Anonymous', tags: snap.val().tags || [],
-            comments: snap.val().comments ? Object.values(snap.val().comments) : [],
-            stars: snap.val().stars || 0, likes: snap.val().likes || 0, downloads: snap.val().downloads || 0 };
-          hubProjectsCache.push(fetched);
-          hubOpenDetail(id);
-        } else {
-          hubShowToast('Project not found', 'error');
-        }
-      });
-    });
-    return;
-  }
+  if (!p) return;
   hubCurrentProject = p;
 
   // Increment downloads in Firebase
@@ -19244,7 +19136,7 @@ window.hubToggleLike = async function() {
       return p;
     });
   });
-  hubShowToast(isLiked ? 'Like removed' : 'Liked!', isLiked ? 'info' : 'success');
+  hubShowToast(isLiked ? 'Like removed' : 'Liked! ❤️', isLiked ? 'info' : 'success');
 };
 
 function hubRenderComments(comments) {
@@ -19352,13 +19244,13 @@ window.hubOpenInIDE = function() {
 
   closeHubDetail();
   closeHub();
-  hubShowToast(`"${p.title}" opened in IDE!`, 'success');
+  hubShowToast(`✅ "${p.title}" opened in IDE!`, 'success');
 };
 
 // ── Publish ─────────────────────────────────────────────
 window.openHubPublish = function() {
   hubPublishTags = [];
-  hubPublishEmoji = '';
+  hubPublishEmoji = '🚀';
   hubPublishCoverFile = null;
   document.getElementById('hubPublishTitle').value = '';
   document.getElementById('hubPublishDesc').value = '';
@@ -19802,6 +19694,7 @@ window.hubDeleteProject = async function() {
 };
 
 // ── Report System ────────────────────────────────────────
+const HUB_REPORTS_PATH = 'hub/reports';
 
 window.hubOpenReport = async function() {
   const p = hubCurrentProject;
@@ -20136,8 +20029,6 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
     // Show follow btn whenever there's an ownerUid and it's not the user's own profile
     // If not logged in, hubToggleFollow() will prompt sign-in
     followBtn.style.display = (ownerUid && !isOwnProfile) ? 'flex' : 'none';
-    followBtn.style.pointerEvents = 'auto';
-    followBtn.disabled = false;
     // Reset button state to default (not following) until Firebase confirms
     _setFollowBtnState(false);
 
@@ -20213,7 +20104,7 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
       }
       userProjects.sort((a,b) => (b.publishedAt||0) - (a.publishedAt||0));
       list.innerHTML = userProjects.map(p => {
-        const emoji = p.emoji || '';
+        const emoji = p.emoji || '🚀';
         const stars = Number(p.stars||0).toFixed(1);
         const dls   = fmtNum(p.downloads||0);
         return '<div class="hub-profile-proj-item" onclick="closeHubProfile();setTimeout(()=>hubOpenDetail(\'' + p.id + '\'),200)">' +
@@ -20271,7 +20162,7 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
       if (isNowFollowing) {
         await followerRef.set({ at: Date.now(), name: currentUser.displayName || currentUser.email || 'Anonymous' });
         await followingRef.set({ at: Date.now() });
-        hubShowToast('Now following ' + _profileAuthorName', 'success');
+        hubShowToast('Now following ' + _profileAuthorName + ' 🎉', 'success');
       } else {
         await followerRef.remove();
         await followingRef.remove();
@@ -20294,50 +20185,6 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
 })(); // end Hub+Profile IIFE
 </script>
 
-<script>
-// ── BULLETPROOF HUB BUTTON FIX ──────────────────────────────────────
-// Ensures the marketplace button always opens the hub overlay,
-// regardless of layout overlaps or event-handler timing issues.
-(function() {
-  function wireHubBtn() {
-    var btn = document.getElementById('actHub');
-    var overlay = document.getElementById('hubOverlay');
-    if (!btn || !overlay) { setTimeout(wireHubBtn, 100); return; }
-
-    // Remove and re-set onclick to guarantee it's the real handler
-    btn.removeAttribute('onclick');
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      // If already open, close it
-      if (overlay.classList.contains('hub-open')) {
-        overlay.classList.remove('hub-open');
-        var badge = document.getElementById('hubNavBadge');
-        if (badge) badge.style.display = 'none';
-        btn.classList.remove('active');
-        if (typeof hubUnsubscribe === 'function') hubUnsubscribe();
-        return;
-      }
-      // Open hub
-      overlay.classList.add('hub-open');
-      var badge2 = document.getElementById('hubNavBadge');
-      if (badge2) badge2.style.display = 'none';
-      // Clear other sidebar icons
-      ['actExplorer','actSearch','actCollab','actTools','actLibraries','actGroqAI'].forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.classList.remove('active');
-      });
-      btn.classList.add('active');
-      if (typeof hubPopulatePublishProjects === 'function') hubPopulatePublishProjects();
-      if (typeof hubSubscribe === 'function') hubSubscribe();
-    }, true); // useCapture=true so it fires even if child elements stop propagation
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', wireHubBtn);
-  } else {
-    wireHubBtn();
-  }
-})();
-</script>
 
 <!-- ── HUB PROFILE OVERLAY ── -->
 <div id="hubProfileOverlay">
