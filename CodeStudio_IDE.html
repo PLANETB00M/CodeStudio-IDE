@@ -20031,6 +20031,9 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
     // If not logged in, hubToggleFollow() will prompt sign-in
     followBtn.style.display = (ownerUid && !isOwnProfile) ? 'flex' : 'none';
     // Reset button state to default (not following) until Firebase confirms
+    // Also ensure button is re-enabled in case a previous follow action was interrupted
+    const _resetBtn = document.getElementById('hubProfileFollowBtn');
+    if (_resetBtn) _resetBtn.disabled = false;
     _setFollowBtnState(false);
 
     document.getElementById('hubProfileOverlay').classList.add('open');
@@ -20045,9 +20048,12 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
     _profileAuthorName = null;
   };
 
-  // Backdrop click
-  document.getElementById('hubProfileOverlay').addEventListener('click', function(e) {
-    if (e.target === this) closeHubProfile();
+  // Backdrop click — deferred so the element exists in DOM when this script runs
+  document.addEventListener('DOMContentLoaded', function() {
+    const _overlayEl = document.getElementById('hubProfileOverlay');
+    if (_overlayEl) _overlayEl.addEventListener('click', function(e) {
+      if (e.target === this) closeHubProfile();
+    });
   });
 
   async function _loadProfileData() {
@@ -20086,11 +20092,18 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
         document.getElementById('hubProfileFollowers').textContent = fmtNum(followersCount);
         document.getElementById('hubProfileFollowing').textContent = fmtNum(followingCount);
 
-        // Follow button state
+        // Follow button state — check if current user already follows this profile
         const currentUser = window._fbCurrentUser;
-        if (currentUser && currentUser.uid !== _profileOwnerUid) {
-          const myFollowSnap = await fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid + '/' + currentUser.uid).once('value');
-          _setFollowBtnState(myFollowSnap.exists());
+        if (currentUser && currentUser.uid && currentUser.uid !== _profileOwnerUid) {
+          try {
+            const myFollowSnap = await fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid + '/' + currentUser.uid).once('value');
+            _setFollowBtnState(myFollowSnap.exists());
+          } catch(e) {
+            console.warn('[Profile] Could not read follow state:', e);
+            _setFollowBtnState(false);
+          }
+        } else {
+          _setFollowBtnState(false);
         }
       } else {
         document.getElementById('hubProfileFollowers').textContent = '—';
@@ -20153,23 +20166,32 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
     };
 
     let currentUser = window._fbCurrentUser;
-    // FIX 2: Accept any signed-in Firebase user (not just Google) as valid
+    // Check if already signed in to Firebase with any provider
     const isLoggedIn = !!(currentUser && currentUser.uid);
     if (!isLoggedIn) {
+      // Show a helpful toast before opening popup (some browsers block unexpected popups)
+      hubShowToast('Opening sign-in… allow popup if blocked', 'info');
       try {
         const u = await signInWithFirebaseGoogle();
         if (!u) { hubShowToast('Sign in required to follow users', 'error'); _restoreBtn(); return; }
-        // Poll for _fbCurrentUser (up to 5s, 25 × 200ms)
-        for (let i = 0; i < 25; i++) {
+        // Poll for _fbCurrentUser (up to 6s, 30 × 200ms)
+        for (let i = 0; i < 30; i++) {
           currentUser = window._fbCurrentUser;
           if (currentUser && currentUser.uid) break;
           await new Promise(r => setTimeout(r, 200));
         }
         if (!currentUser || !currentUser.uid) {
-          hubShowToast('Sign-in timed out, please try again', 'error');
+          hubShowToast('Sign-in timed out — allow popup & try again', 'error');
           _restoreBtn(); return;
         }
-      } catch(e) { hubShowToast('Sign-in failed', 'error'); _restoreBtn(); return; }
+      } catch(e) {
+        console.error('[Follow] sign-in error:', e);
+        const msg = (e && e.code === 'auth/popup-blocked')
+          ? 'Popup blocked — please allow popups for this site'
+          : 'Sign-in failed — please try again';
+        hubShowToast(msg, 'error');
+        _restoreBtn(); return;
+      }
     }
 
     // FIX 3: Guard against profile being closed while sign-in was in progress
