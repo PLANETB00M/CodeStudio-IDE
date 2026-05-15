@@ -20502,6 +20502,18 @@ const HUB_FEED_PATH   = 'codeStudioHub';    // same as HUB_FB_PATH
 const FOLLOW_FB_PATH  = 'codeStudioFollows';
 const NOTIF_FB_PATH   = 'codeStudioNotifs';
 
+// ── Safe Firebase getter (timeout 6s, never throws) ─────
+function _waitFB(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('FB_TIMEOUT')), timeoutMs || 6000);
+    const check = () => {
+      if (window._fbDB) { clearTimeout(t); resolve(window._fbDB); }
+      else setTimeout(check, 120);
+    };
+    check();
+  });
+}
+
 // ── Tab Switcher ────────────────────────────────────────
 window.hubSwitchTab = function(tab) {
   ['discover','feed','notifs'].forEach(t => {
@@ -20551,7 +20563,7 @@ window.hubClearNotifBadge = function() { _setNotifBadge(0); };
 window.hubMarkAllRead = function() {
   const uid = window._fbCurrentUser && window._fbCurrentUser.uid;
   if (!uid) return;
-  hubWaitForFB().then(db => {
+  _waitFB().then(db => {
     const ref = db.ref(NOTIF_FB_PATH + '/' + uid);
     ref.once('value').then(snap => {
       if (!snap.exists()) return;
@@ -20562,7 +20574,7 @@ window.hubMarkAllRead = function() {
         hubClearNotifBadge();
       });
     });
-  });
+  }).catch(() => {});
 };
 
 // ── Write notification to a user ─────────────────────────
@@ -20570,7 +20582,7 @@ window.hubMarkAllRead = function() {
 window._hubSendNotif = async function(toUid, type, data) {
   if (!toUid) return;
   try {
-    const db = await hubWaitForFB();
+    const db = await _waitFB(8000);
     await db.ref(NOTIF_FB_PATH + '/' + toUid).push({
       type, ...data, at: Date.now(), read: false
     });
@@ -20583,14 +20595,14 @@ function _startNotifListener() {
   const uid = window._fbCurrentUser && window._fbCurrentUser.uid;
   if (!uid || _notifListenerOn) return;
   _notifListenerOn = true;
-  hubWaitForFB().then(db => {
+  _waitFB(8000).then(db => {
     db.ref(NOTIF_FB_PATH + '/' + uid).on('value', snap => {
       if (!snap.exists()) { _setNotifBadge(0); return; }
       let unread = 0;
       snap.forEach(c => { if (!c.val().read) unread++; });
       _setNotifBadge(unread);
     });
-  });
+  }).catch(() => { _notifListenerOn = false; });
 }
 
 // Start listener whenever hub is opened
@@ -20617,18 +20629,24 @@ window.hubNotifsLoad = async function() {
 
   el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px;"><i class="fas fa-circle-notch fa-spin" style="font-size:20px;margin-bottom:10px;display:block;"></i>Loading…</div>`;
 
+  let db;
+  try { db = await _waitFB(7000); }
+  catch(e) {
+    el.innerHTML = `<div class="hub-notif-empty"><i class="fas fa-wifi"></i><h3>Connecting…</h3><p>Hub is still initializing. Please wait a moment and try again.</p></div>`;
+    return;
+  }
+
   try {
-    const db = await hubWaitForFB();
     const snap = await db.ref(NOTIF_FB_PATH + '/' + uid).orderByChild('at').limitToLast(40).once('value');
 
     if (!snap.exists()) {
-      el.innerHTML = `<div class="hub-notif-empty"><i class="fas fa-bell"></i><h3>All caught up!</h3><p>When someone follows you, likes your project, or leaves a comment, you'll see it here.</p></div>`;
+      el.innerHTML = `<div class="hub-notif-empty"><i class="fas fa-bell"></i><h3>All caught up!</h3><p>When someone follows you, stars your project, or leaves a comment, you'll see it here.</p></div>`;
       return;
     }
 
     const items = [];
     snap.forEach(c => items.push({ key: c.key, ...c.val() }));
-    items.reverse(); // newest first
+    items.reverse();
 
     const typeMap = {
       follow:  { icon:'fa-user-plus',   color:'#3b82f6', bg:'rgba(59,130,246,0.12)' },
@@ -20644,8 +20662,11 @@ window.hubNotifsLoad = async function() {
       if (n.type === 'star')    text = `<b>${_esc(n.fromName||'Someone')}</b> starred your project <b>${_esc(n.projectTitle||'')}</b>`;
       if (n.type === 'comment') text = `<b>${_esc(n.fromName||'Someone')}</b> commented on <b>${_esc(n.projectTitle||'')}</b>: "${_esc((n.text||'').slice(0,60))}"`;
       if (n.type === 'publish') text = `<b>${_esc(n.fromName||'Someone')}</b> you follow published <b>${_esc(n.projectTitle||'')}</b>`;
+      const pid = _esc(n.projectId||'');
+      const nkey = _esc(n.key||'');
+      const uid2 = _esc(uid||'');
       return `
-        <div class="hub-notif-item ${n.read?'':'unread'}" onclick="_hubNotifClick('${n.key}','${uid}','${n.type}','${_esc(n.projectId||'')}')">
+        <div class="hub-notif-item ${n.read?'':'unread'}" onclick="_hubNotifClick('${nkey}','${uid2}','${_esc(n.type)}','${pid}')">
           ${!n.read ? '<div class="hub-notif-unread-pip"></div>' : ''}
           <div class="hub-notif-icon" style="background:${t.bg};color:${t.color};"><i class="fas ${t.icon}"></i></div>
           <div style="flex:1;min-width:0;">
@@ -20664,7 +20685,7 @@ window.hubNotifsLoad = async function() {
 // Click handler — mark read, optionally open project
 window._hubNotifClick = async function(key, uid, type, projectId) {
   try {
-    const db = await hubWaitForFB();
+    const db = await _waitFB(5000);
     await db.ref(NOTIF_FB_PATH + '/' + uid + '/' + key + '/read').set(true);
   } catch(e) {}
   if (projectId && (type === 'star' || type === 'comment' || type === 'publish')) {
@@ -20742,9 +20763,14 @@ window.hubFeedLoad = async function(force) {
 
   el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px;"><i class="fas fa-circle-notch fa-spin" style="font-size:20px;margin-bottom:10px;display:block;"></i>Loading feed…</div>`;
 
-  try {
-    const db = await hubWaitForFB();
+  let db;
+  try { db = await _waitFB(7000); }
+  catch(e) {
+    el.innerHTML = `<div class="hub-feed-empty"><i class="fas fa-wifi"></i><h3>Connecting…</h3><p>Hub is still initializing. Please wait a moment and try again.</p></div>`;
+    return;
+  }
 
+  try {
     // 1. Get list of people I follow
     const followingSnap = await db.ref(FOLLOW_FB_PATH + '/following/' + uid).once('value');
     if (!followingSnap.exists()) {
@@ -20767,8 +20793,6 @@ window.hubFeedLoad = async function(force) {
       });
     }
 
-    // 3. Get star activity from followers' notifications path (approximation)
-    // We'll show a combined feed sorted by time
     feedItems.sort((a, b) => b.at - a.at);
     const recent = feedItems.slice(0, 30);
 
@@ -20778,8 +20802,8 @@ window.hubFeedLoad = async function(force) {
     }
 
     const typeConfig = {
-      publish: { icon: 'fa-upload',   color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)',   badgeBg: 'rgba(139,92,246,0.2)',  badgeColor: '#a78bfa', label: 'Published' },
-      star:    { icon: 'fa-star',     color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',   badgeBg: 'rgba(245,158,11,0.2)', badgeColor: '#fbbf24', label: 'Starred'   },
+      publish: { icon: 'fa-upload', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', label: 'Published' },
+      star:    { icon: 'fa-star',   color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', label: 'Starred'   },
     };
 
     el.innerHTML = recent.map((item, i) => {
@@ -20788,15 +20812,13 @@ window.hubFeedLoad = async function(force) {
       const avatarBg = p.authorColor || '#3b82f6';
       const avatarLetter = (p.author || '?')[0].toUpperCase();
       const avatarHtml = p.authorPhotoURL
-        ? `<img src="${p.authorPhotoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" alt="" onerror="this.style.display='none';this.parentNode.style.background='${avatarBg}';this.parentNode.textContent='${avatarLetter}';">`
+        ? `<img src="${p.authorPhotoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" alt="" onerror="this.style.display='none'">`
         : avatarLetter;
 
-      const actionText = item.type === 'publish'
-        ? `<b>${_esc(p.author||'Someone')}</b> published a new project`
-        : `<b>${_esc(p.author||'Someone')}</b> starred a project`;
+      const actionText = `<b>${_esc(p.author||'Someone')}</b> published a new project`;
 
       return `
-        <div class="hub-feed-item" style="animation-delay:${i*0.04}s" onclick="hubSwitchTab('discover');setTimeout(()=>hubOpenDetail('${p.id}'),150)">
+        <div class="hub-feed-item" style="animation-delay:${i*0.04}s" onclick="hubSwitchTab('discover');setTimeout(()=>hubOpenDetail('${_esc(p.id||'')}'),150)">
           <div class="hub-feed-avatar" style="background:${avatarBg};">
             ${avatarHtml}
             <div class="hub-feed-avatar-badge" style="background:${tc.bg};color:${tc.color};">
@@ -20806,7 +20828,7 @@ window.hubFeedLoad = async function(force) {
           <div class="hub-feed-content">
             <div class="hub-feed-text">${actionText}</div>
             <div class="hub-feed-proj-chip">
-              <span>${p.emoji||'🚀'}</span>
+              <span>${_esc(p.emoji||'🚀')}</span>
               <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(p.title||'Untitled')}</span>
             </div>
             <div class="hub-feed-time">${_relTime(item.at)}</div>
@@ -20835,16 +20857,13 @@ async function _hubNotifyFollowersOfPublish() {
   try {
     const me = window._fbCurrentUser;
     if (!me) return;
-    const db = await hubWaitForFB();
-    // Get my followers
+    const db = await _waitFB(8000);
     const snap = await db.ref(FOLLOW_FB_PATH + '/followers/' + me.uid).once('value');
     if (!snap.exists()) return;
-    // Get the latest project I published (last item with my ownerUid)
     const projSnap = await db.ref(HUB_FEED_PATH).orderByChild('ownerUid').equalTo(me.uid).limitToLast(1).once('value');
     let proj = null;
     projSnap.forEach(c => { proj = c.val(); });
     if (!proj) return;
-    // Send notif to each follower
     const followerUids = Object.keys(snap.val());
     followerUids.forEach(fuid => {
       window._hubSendNotif(fuid, 'publish', {
