@@ -20498,9 +20498,9 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
 (function() {
 
 // ── Paths ───────────────────────────────────────────────
-const HUB_FEED_PATH   = 'codeStudioHub';    // same as HUB_FB_PATH
-const FOLLOW_FB_PATH  = 'codeStudioFollows';
-const NOTIF_FB_PATH   = 'codeStudioNotifs';
+const HUB_FEED_PATH   = 'hub/projects';    // same as HUB_FB_PATH
+const FOLLOW_FB_PATH  = 'hub/follows';
+const NOTIF_FB_PATH   = 'hub/notifications';
 
 // ── Safe Firebase getter (timeout 6s, never throws) ─────
 function _waitFB(timeoutMs) {
