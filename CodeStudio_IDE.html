@@ -18024,8 +18024,9 @@ var _markedPatchInterval = setInterval(function() {
   background:linear-gradient(135deg,rgba(var(--accent-rgb),1),rgba(var(--accent-rgb),0.75));
   color:#fff; transition:all 0.2s; display:flex; align-items:center; gap:6px;
 }
-.hub-profile-follow-btn:hover { transform:translateY(-1px); filter:brightness(1.1); }
+.hub-profile-follow-btn:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.1); }
 .hub-profile-follow-btn.following { background:var(--bg); border:1px solid var(--border); color:var(--text-dim); }
+.hub-profile-follow-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none !important; filter:none !important; }
 .hub-profile-projects { padding:0 22px 20px; overflow-y:auto; flex:1; }
 .hub-profile-projects-title { font-size:11px; font-weight:800; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; border-top:1px solid var(--border); padding-top:14px; }
 .hub-profile-proj-item {
@@ -20136,23 +20137,45 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
   }
 
   window.hubToggleFollow = async function() {
+    // FIX 1: Prevent double-click / re-entry while async work is in progress
+    const btn = document.getElementById('hubProfileFollowBtn');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const origIcon  = document.getElementById('hubProfileFollowIcon').className;
+    const origLabel = document.getElementById('hubProfileFollowLabel').textContent;
+    document.getElementById('hubProfileFollowIcon').className = 'fas fa-spinner fa-spin';
+    document.getElementById('hubProfileFollowLabel').textContent = '…';
+
+    const _restoreBtn = () => {
+      btn.disabled = false;
+      document.getElementById('hubProfileFollowIcon').className = origIcon;
+      document.getElementById('hubProfileFollowLabel').textContent = origLabel;
+    };
+
     let currentUser = window._fbCurrentUser;
-    const isLoggedInWithGoogle = currentUser && currentUser.providerData &&
-      currentUser.providerData.some(p => p.providerId === 'google.com');
-    if (!isLoggedInWithGoogle) {
+    // FIX 2: Accept any signed-in Firebase user (not just Google) as valid
+    const isLoggedIn = !!(currentUser && currentUser.uid);
+    if (!isLoggedIn) {
       try {
         const u = await signInWithFirebaseGoogle();
-        if (!u) { hubShowToast('Sign in required to follow users', 'error'); return; }
-        // Poll for _fbCurrentUser instead of a fixed wait (up to 4s)
-        for (let i = 0; i < 20; i++) {
+        if (!u) { hubShowToast('Sign in required to follow users', 'error'); _restoreBtn(); return; }
+        // Poll for _fbCurrentUser (up to 5s, 25 × 200ms)
+        for (let i = 0; i < 25; i++) {
           currentUser = window._fbCurrentUser;
-          if (currentUser) break;
+          if (currentUser && currentUser.uid) break;
           await new Promise(r => setTimeout(r, 200));
         }
-        if (!currentUser) { hubShowToast('Sign-in timed out, please try again', 'error'); return; }
-      } catch(e) { hubShowToast('Sign-in failed', 'error'); return; }
+        if (!currentUser || !currentUser.uid) {
+          hubShowToast('Sign-in timed out, please try again', 'error');
+          _restoreBtn(); return;
+        }
+      } catch(e) { hubShowToast('Sign-in failed', 'error'); _restoreBtn(); return; }
     }
-    if (!_profileOwnerUid) return;
+
+    // FIX 3: Guard against profile being closed while sign-in was in progress
+    if (!_profileOwnerUid) { _restoreBtn(); return; }
+    // Prevent following yourself even if ownerUid check above was bypassed
+    if (currentUser.uid === _profileOwnerUid) { _restoreBtn(); return; }
 
     try {
       const fbDB = await hubWaitForFB();
@@ -20171,16 +20194,20 @@ document.getElementById('hubPublishOverlay').addEventListener('click', function(
         hubShowToast('Unfollowed ' + _profileAuthorName, 'info');
       }
 
+      // FIX 4: Update button state correctly before re-enabling
       _setFollowBtnState(isNowFollowing);
+      btn.disabled = false;
 
-      // Update count live
+      // FIX 5: Always update follower count live, including on unfollow
       const countSnap = await fbDB.ref(FOLLOW_PATH + '/followers/' + _profileOwnerUid).once('value');
-      const count = countSnap.exists() ? Object.keys(countSnap.val()).length : 0;
-      document.getElementById('hubProfileFollowers').textContent = fmtNum(count);
+      const newCount = countSnap.exists() ? Object.keys(countSnap.val()).length : 0;
+      document.getElementById('hubProfileFollowers').textContent = fmtNum(newCount);
 
     } catch(e) {
       console.error('[Profile] follow error', e);
       hubShowToast('Action failed — check connection', 'error');
+      // FIX 6: Always restore button even on error so user can retry
+      _restoreBtn();
     }
   };
 
