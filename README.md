@@ -17,96 +17,111 @@
 
 ## ✨ Overview
 
-CodeStudio IDE is a fully-featured web development environment built entirely as a **single HTML file**. It delivers a rich coding experience with real-time collaboration, voice & video huddle, AI-powered tools, and cloud sync — all without any installation or backend server.
+CodeStudio IDE is a fully-featured development environment built entirely as a **single HTML file**. It supports multiple languages, real-time collaboration, voice & video huddle, an AI assistant, a community Hub, and cloud sync — all with zero installation and no backend server required.
 
 ---
 
 ## 🚀 Features
 
 ### 🖊️ Editor
-- **Syntax Highlighting** — HTML, CSS, and JavaScript with full color coding
-- **Auto-complete & IntelliSense** — Smart suggestions as you type
-- **Auto Close Brackets & Tags** — Automatically closes brackets and HTML tags
-- **Multi-tab Editing** — Switch between HTML, CSS, and JS files instantly
-- **Font Size Control** — Adjustable editor font size
+- **Syntax Highlighting** — HTML, CSS, JavaScript, TypeScript, Python, Java, C/C++, Markdown, JSON, and more via Prism.js
+- **Auto-complete & IntelliSense** — Smart tag, attribute, CSS property, and JS keyword suggestions as you type
+- **Auto Close Brackets & Tags** — Automatically closes brackets, quotes, and HTML tags
+- **Multi-language Projects** — Web (HTML/CSS/JS), JavaScript, TypeScript, Python, Java, C/C++, Markdown, and Blank
+- **Custom File Manager** — Create, rename, delete, and organize files and folders inside each project
+- **Split Editor** — Side-by-side view of any two files with real-time sync (`Ctrl+\`)
+- **Minimap** — Visual overview panel for quick navigation in large files
+- **Code Beautifier** — One-click formatting for HTML, CSS, and JS (`Ctrl+Shift+F`)
+- **Find & Replace** — Full search and replace with match highlighting (`Ctrl+H`)
+- **Comment Toggle** — Comment/uncomment lines instantly (`Ctrl+/`)
+- **Breakpoints** — Click gutter to set/clear breakpoints with visual indicators
+- **Word Count & Stats** — Live line, word, and character count in the status bar
+- **Font Size Control** — Adjust editor font size with `Ctrl+=` / `Ctrl+−`
 - **Word Wrap Toggle** — Toggle line wrapping on/off
-- **Code Folding** — Collapse and expand code blocks
-- **Mini Map** — Navigate large files with ease
-- **Error Detection** — Real-time error highlighting in the gutter
-- **Find & Replace** — Powerful search and replace tool
-- **Keyboard Shortcuts** — Full set of VS Code-like shortcuts
+- **Focus Mode** — Distraction-free full-screen editing (`F11`)
 
 ### 👁️ Preview
 - **Live Preview** — Real-time HTML/CSS/JS preview as you type
-- **Split / Full / Desktop modes** — Multiple layout options
-- **Adjustable Preview Delay** — Control how fast the preview updates
-- **Console Output** — View JavaScript logs and errors inline
+- **Adjustable Preview Delay** — Control how fast the preview refreshes
+- **Fullscreen Preview** — Expand preview to fill the screen
+- **Responsive Breakpoints Tool** — Preview at common device widths
+- **Console Panel** — View `console.log`, errors, and warnings inline with the editor
 
 ### 📁 Project Management
-- **Multi-Project Workspace** — Manage multiple projects simultaneously
-- **File Manager** — Create, rename, delete files and folders
-- **ZIP Export** — Export your entire project as a ZIP file
-- **Import Projects** — Import ZIP files directly into the IDE
-- **Google Drive Sync** — Save and load projects from Google Drive
-- **Auto Save** — Automatic project saving to localStorage
+- **Multi-Project Workspace** — Unlimited projects saved locally in `localStorage`
+- **Language Templates** — Starter files auto-generated for each project type
+- **ZIP Export & Import** — Export any project as a `.zip`; import ZIP files or single HTML files
+- **Google Drive Sync** — Push and pull full project workspaces to/from Google Drive
+- **Auto Save** — Automatically saves on every keystroke (toggleable)
+- **Diff Viewer** — Compare any two snapshots of your code side-by-side (`Ctrl+D`)
 
 ### 🤝 Live Collaboration
 - **Real-time Co-editing** — Multiple users edit the same code simultaneously (powered by Yjs CRDT)
-- **Live Cursors** — See your collaborators' cursors in real-time
+- **Live Cursors** — See every collaborator's cursor and selection in real-time
 - **Public Room Browser** — Discover and join public coding rooms (powered by Firebase)
 - **Private Rooms** — Password-protected rooms for your team
 - **Role-based Permissions** — Host / Editor / Viewer roles with granular controls
-- **Join Request System** — Host approves or denies join requests
-- **Follow Me Mode** — Collaborators follow the host's cursor and scroll position
-- **Live Leaderboard** — Track who's contributing the most code in real-time
-- **File Presence Indicators** — See which file each collaborator is editing
+- **Join Request System** — Host approves or denies incoming join requests
+- **Follow Me Mode** — Lock all participants to the host's cursor and scroll position
+- **Live Leaderboard** — Track code contributions per collaborator in real-time
+- **File Presence Indicators** — See which file each collaborator is currently editing
 
 ### 🎙️ Voice & Video Huddle
-- **Voice Huddle** — Crystal-clear audio calls directly in the IDE
-- **Video Huddle** — Face-to-face video calls with your collaborators
+- **Voice Huddle** — In-browser audio calls with no external app needed
+- **Video Huddle** — Face-to-face video with collaborators
 - **Screen Share** — Share your screen during a session
-- **Camera Toggle** — Turn camera on/off anytime
-- **Mic Toggle** — Mute/unmute with one click
-- **Participant Count** — Live count of huddle participants
+- **Camera & Mic Toggles** — Turn camera/microphone on or off at any time
+- **Participant Count** — Live count of active huddle participants
 
 ### 💬 Communication
 - **Collab Chat** — Real-time group chat during collaboration sessions
 - **Direct Messages (DM)** — Private one-on-one messaging between collaborators
-- **System Notifications** — Join/leave notifications and system messages
-- **Reaction Support** — Express yourself during sessions
+- **System Notifications** — Join/leave events and room status messages
+- **Whiteboard** — Collaborative freehand drawing canvas with pen, marker, highlighter, eraser, shapes, and text tools — synced live across all collaborators
+
+### 🏪 CodeStudio Hub
+- **Discover Feed** — Browse projects published by the community
+- **Publish Projects** — Share your project publicly with a title, description, tags, and cover image
+- **Star & Comment** — Star projects you love and leave comments
+- **Follow Developers** — Follow other users and see their activity in your personal feed
+- **Notifications** — Get notified when someone stars, comments on, or follows you
+- **Developer Profiles** — Public profile pages showing projects, followers, following, stars, and downloads
 
 ### 🎨 Themes & Customization
-- **Built-in Themes** — Dark, Light, Monokai, Dracula, Nord, Solarized, and more
-- **Custom Theme Engine** — Full color customization with live preview
-  - Background, Surface, Toolbar colors
-  - Text, Dim Text colors
-  - Accent, Success, Danger, Warning colors
-  - Border, Scrollbar colors
-  - Syntax highlighting colors (Keywords, Strings, Functions, etc.)
-- **Theme Import/Export** — Share your custom themes
-- **Persistent Themes** — Your theme is saved and restored automatically
+- **Built-in Dark Themes** — Default Dark, Dracula, Oceanic, Monokai, Midnight, Nord, Synthwave
+- **Built-in Light Themes** — Light, Snow, Sakura, Latte, Mint
+- **Custom Theme Engine** — Full color customization: background, sidebar, toolbar, text, accent, success, danger, warning, border, scrollbar, and all syntax token colors
+- **Theme Import / Export** — Share your custom themes as `.json` files
+- **Persistent Themes** — Your theme choice is saved across sessions
 
-### 🤖 AI Tools
-- **AI Code Analysis** — Powered by Qroq AI to review and suggest improvements
-- **Smart Snippets** — Quick-insert common HTML, CSS, and JS patterns
-- **Libraries Panel** — One-click CDN library injection (Bootstrap, Tailwind, React, Vue, etc.)
+### 🤖 AI Assistant (Groq)
+- **AI Chat Panel** — Ask the AI to write, fix, explain, or refactor your code (`Ctrl+G`)
+- **Fix Selected Code** — Highlight broken code and fix it in one click (`Alt+E`)
+- **Explain Selected Code** — Get a plain-English explanation of any selection
+- **Multiple Models** — Choose between Llama 3.3 70B, Llama 3.1, Llama 8B, Gemma 2, and more
+- **Usage Stats** — Track your AI token usage per session
+- **Attach Files** — Send files directly to the AI chat for context
+
+### 🧰 Dev Tools & Toolbox
+- **Smart Snippets** — Quick-insert templates for HTML5, Flexbox, Grid, Tables, Forms, Fetch, and more
+- **Libraries Panel** — One-click CDN injection for Bootstrap, Tailwind, React, Vue, jQuery, D3.js, and more
+- **Responsive Breakpoints Inserter** — Auto-insert standard CSS media queries
+- **Remove Comments Tool** — Strip all comments from the current file in one click
+- **Code Statistics** — Total lines, words, and characters across all projects
 
 ### 👤 User Accounts
-- **Google Sign-In** — One-click login with your Google account (powered by Firebase Auth)
-- **Profile Pictures** — Your Google profile photo appears everywhere in the IDE
-- **Persistent Identity** — Your name and avatar sync across all devices
-- **Guest Mode** — Use the IDE without signing in
+- **Google Sign-In** — One-click login via Firebase Auth
+- **Profile Pictures** — Your Google avatar appears everywhere in the IDE and Hub
+- **Auto Account Sync** — Projects sync to your account across devices
+- **Guest Mode** — Full IDE access without signing in
 
-### 🎓 Learning Center
-- **Built-in Tutorials** — HTML, CSS, JavaScript learning resources
-- **Quick Reference** — Cheat sheets for common patterns
-- **Interactive Examples** — Learn by doing
-
-### ⚡ Productivity
-- **Snippet Toolbar** — Quick-insert HTML5, DIV, BUTTON, TABLE, FLEX, GRID, FETCH templates
-- **Command Shortcuts** — Ctrl+S to save, Ctrl+Z to undo, and more
-- **Session Stats** — Track words typed, time spent, and lines written
-- **All-time Statistics** — Long-term coding stats dashboard
+### ⚙️ Settings & Productivity
+- **PWA — Install as App** — Install CodeStudio as a desktop/mobile app via the browser
+- **Offline Support** — All editing, preview, and local saving works without internet
+- **Session Stats** — Live count of keystrokes, words typed, and time in session
+- **All-time Statistics** — Cumulative coding stats dashboard
+- **Learning Center** — Built-in HTML, CSS, and JS tutorials with interactive examples
+- **FAQ Panel** — Searchable help covering all major features
 
 ---
 
@@ -114,20 +129,20 @@ CodeStudio IDE is a fully-featured web development environment built entirely as
 
 | Technology | Purpose |
 |---|---|
-| **Vanilla HTML/CSS/JS** | Core IDE — zero frameworks |
+| **Vanilla HTML / CSS / JS** | Core IDE — zero frameworks |
+| **Prism.js** | Syntax highlighting |
 | **Yjs (CRDT)** | Real-time collaborative editing |
-| **PeerJS (WebRTC)** | P2P voice, video, and data |
+| **PeerJS (WebRTC)** | P2P voice, video, screen share, and data |
 | **Firebase Auth** | Google Sign-In |
-| **Firebase Realtime DB** | Public room discovery |
+| **Firebase Realtime DB** | Public room discovery & Hub |
 | **Google Drive API** | Cloud project storage |
-| **Groq AI API** | AI code analysis |
+| **Groq AI API** | AI code assistant |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Option 1 — Use Online
-Visit the live demo directly:
 ```
 https://planetb00m.github.io/CodeStudio-IDE/CodeStudio_IDE.html
 ```
@@ -135,9 +150,9 @@ https://planetb00m.github.io/CodeStudio-IDE/CodeStudio_IDE.html
 ### Option 2 — Run Locally
 1. Download `CodeStudio_IDE.html`
 2. Open it in any modern browser
-3. Start coding!
+3. Start coding — everything works instantly
 
-> ⚠️ Note: Google Sign-In and Public Rooms require an internet connection.
+> ⚠️ Google Sign-In, Public Rooms, and Hub features require an internet connection.
 
 ---
 
@@ -146,43 +161,78 @@ https://planetb00m.github.io/CodeStudio-IDE/CodeStudio_IDE.html
 ### Hosting a Room
 1. Click the **collab icon** in the sidebar
 2. Click **Host a Room**
-3. Set a room name, optional password, and visibility
+3. Set a room name, optional password, and visibility (public/private)
 4. Share your **Room ID** with collaborators
 
 ### Joining a Room
 1. Click the **collab icon** in the sidebar
-2. Click **Browse Public Rooms** or enter a Room ID directly
-3. Wait for the host to approve your request
+2. Browse **Public Rooms** or paste a Room ID directly
+3. Wait for the host to approve your join request
 
-### Voice & Video
+### Voice & Video Huddle
 1. Click **Huddle** at the bottom of the screen
 2. Choose **Voice** or **Video**
-3. All participants in the room can join the huddle
+3. All room participants can join the same huddle
 
 ---
 
 ## 🎨 Theme Customization
 
 1. Click the **theme icon** in the toolbar
-2. Select a preset theme or click **Custom**
-3. Adjust any color using the color pickers
-4. Click **Export** to save your theme as a file
+2. Select a preset or click **Custom**
+3. Adjust any color with the live pickers
+4. Click **Export** to save your theme as a `.json` file
 5. Click **Import** to load a theme file
 
 ---
 
 ## 📊 Keyboard Shortcuts
 
+### Editor
 | Shortcut | Action |
 |---|---|
-| `Ctrl + S` | Save project |
+| `Ctrl + S` | Save / sync project |
 | `Ctrl + Z` | Undo |
 | `Ctrl + Y` | Redo |
 | `Ctrl + /` | Toggle comment |
-| `Ctrl + F` | Find & Replace |
-| `Ctrl + D` | Duplicate line |
-| `Tab` | Indent |
-| `Shift + Tab` | Outdent |
+| `Ctrl + H` | Find & Replace |
+| `Ctrl + Shift + F` | Beautify code |
+| `Ctrl + =` | Font size up |
+| `Ctrl + −` | Font size down |
+| `Tab` | Indent selection |
+| `Shift + Tab` | Outdent selection |
+
+### View & Layout
+| Shortcut | Action |
+|---|---|
+| `F11` | Focus Mode |
+| `Ctrl + \` | Split editor |
+| `Ctrl + B` | Toggle sidebar |
+| `Ctrl + T` | Toggle toolbox |
+| `Ctrl + P` | Toggle preview |
+| `Ctrl + R` | Refresh preview |
+| `Ctrl + K` | Keyboard shortcuts |
+| `Ctrl + ,` | Open settings |
+
+### Files & Projects
+| Shortcut | Action |
+|---|---|
+| `Ctrl + N` | New project |
+| `Ctrl + O` | Open / import file |
+| `Ctrl + E` | Export project |
+| `Ctrl + 1` | Switch to HTML |
+| `Ctrl + 2` | Switch to CSS |
+| `Ctrl + 3` | Switch to JS |
+
+### Console & AI
+| Shortcut | Action |
+|---|---|
+| `Ctrl + \`` | Toggle console |
+| `Ctrl + L` | Clear console |
+| `Ctrl + Enter` | Run / refresh preview |
+| `Ctrl + G` | Open AI chat |
+| `Alt + E` | Fix selected code (AI) |
+| `Ctrl + D` | Open Diff Viewer |
 
 ---
 
@@ -203,8 +253,8 @@ https://planetb00m.github.io/CodeStudio-IDE/CodeStudio_IDE.html
 Copyright (c) 2025 planetb00m. All Rights Reserved.
 
 This software and its source code are proprietary and confidential.
-Unauthorized copying, distribution, modification, or use of this 
-software, in whole or in part, is strictly prohibited without 
+Unauthorized copying, distribution, modification, or use of this
+software, in whole or in part, is strictly prohibited without
 prior written permission from the author.
 ```
 
