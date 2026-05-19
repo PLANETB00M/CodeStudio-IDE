@@ -6219,12 +6219,21 @@
             }
             if (!db[activeProj]) activeProj = Object.keys(db)[0] || null;
             updateProjectList();
-            _updateStaticTabsVisibility();
             renderCustomFiles();
             _initStaticFileDrag();
             _renderStaticTabsFolderState();
-            if (activeProj) switchFile(activeExt);
-            else {
+            if (activeProj) {
+                const initLang = db[activeProj]?._lang || 'web';
+                if (initLang === 'markdown') {
+                    _updateStaticTabsVisibility();
+                    const mdFiles = db[activeProj]._customFiles || {};
+                    const firstMd = Object.keys(mdFiles).find(f => f.toLowerCase().endsWith('.md'));
+                    if (firstMd) switchCustomFile(firstMd);
+                } else {
+                    switchFile(activeExt);
+                    _updateStaticTabsVisibility();
+                }
+            } else {
                 _showEmptyEditorState();
                 // Ensure toolbox and preview are hidden on first load with no project
                 const toolbox = document.getElementById('toolbox');
@@ -7567,13 +7576,18 @@
 
         function _renderStaticTabsFolderState() {
             const map = db[activeProj]?._staticFolders || {};
+            const projLang = db[activeProj]?._lang || 'web';
+            const isMarkdown = projLang === 'markdown';
             ['html','css','js'].forEach(ext => {
                 const el = document.getElementById('f-' + ext);
                 if (!el) return;
                 // Remove old badge
                 const badge = el.querySelector('.static-folder-badge');
                 if (badge) badge.remove();
-                if (map[ext]) {
+                if (isMarkdown) {
+                    // Never show static html/css/js tabs in markdown projects
+                    el.style.display = 'none';
+                } else if (map[ext]) {
                     // Hide the original tab — it now lives inside the folder
                     el.style.display = 'none';
                 } else {
@@ -7882,11 +7896,12 @@
                 </span>
                 <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
                     ${moveBtn}
-                    <i class="fas fa-times" title="Delete" onclick="deleteCustomFile('${name}', event)"
-                        style="opacity:0;font-size:10px;color:var(--danger);padding:2px 4px;border-radius:3px;flex-shrink:0;transition:opacity 0.15s;cursor:pointer;"></i>
+                    ${(db[activeProj]?._lang === 'markdown' && name.toLowerCase() === 'readme.md') ? '' :
+                      `<i class="fas fa-times" title="Delete" onclick="deleteCustomFile('${name}', event)"
+                        style="opacity:0;font-size:10px;color:var(--danger);padding:2px 4px;border-radius:3px;flex-shrink:0;transition:opacity 0.15s;cursor:pointer;"></i>`}
                 </div>`;
-            div.addEventListener('mouseenter', () => { div.querySelector('.fa-times').style.opacity = '0.6'; });
-            div.addEventListener('mouseleave', () => { div.querySelector('.fa-times').style.opacity = '0'; });
+            div.addEventListener('mouseenter', () => { const x = div.querySelector('.fa-times'); if (x) x.style.opacity = '0.6'; });
+            div.addEventListener('mouseleave', () => { const x = div.querySelector('.fa-times'); if (x) x.style.opacity = '0'; });
 
             // Drag events
             div.addEventListener('dragstart', e => {
@@ -8096,12 +8111,20 @@
             const ext = (name.split('.').pop() || '').toLowerCase();
             const langMap = { js:'javascript', ts:'javascript', md:'markup', html:'markup', xml:'markup', json:'json', css:'css', php:'php', py:'python' };
             output.className = 'language-' + (langMap[ext] || 'markup');
+            _updateStaticTabsVisibility();
             refreshView();
             updateLineNumbers(true);
+            if (typeof updatePreview === 'function') updatePreview();
         }
 
         async function deleteCustomFile(name, e) {
             e.stopPropagation();
+            // Protect README.md in markdown projects — it's the required entry file
+            const projLang = db[activeProj]?._lang || 'web';
+            if (projLang === 'markdown' && name.toLowerCase() === 'readme.md') {
+                await customAlert('README.md cannot be deleted — it is the main file of a Markdown project.');
+                return;
+            }
             if (!await customConfirm(`Delete "${name}"?`)) return;
             const files = _getCustomFiles();
             delete files[name];
@@ -8111,11 +8134,28 @@
                 fd.files = (fd.files || []).filter(f => f !== name);
             });
             if (activeExt === '_custom_' + name) {
-                activeExt = 'html';
-                input.value = db[activeProj].html;
-                document.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
-                const h = document.getElementById('f-html');
-                if (h) h.classList.add('active');
+                const projLangFallback = db[activeProj]?._lang || 'web';
+                const remainingCustomFiles = _getCustomFiles();
+                if (projLangFallback === 'markdown') {
+                    // Fall back to README.md (or the first remaining .md file)
+                    const fallbackMd = 'README.md' in remainingCustomFiles
+                        ? 'README.md'
+                        : Object.keys(remainingCustomFiles).find(f => f.toLowerCase().endsWith('.md'));
+                    if (fallbackMd) {
+                        activeExt = '_custom_' + fallbackMd;
+                        input.value = remainingCustomFiles[fallbackMd];
+                        document.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
+                        const tab = document.getElementById('f-custom-' + fallbackMd);
+                        if (tab) tab.classList.add('active');
+                    }
+                } else {
+                    activeExt = 'html';
+                    input.value = db[activeProj].html;
+                    document.querySelectorAll('.file-tab').forEach(t => t.classList.remove('active'));
+                    const h = document.getElementById('f-html');
+                    if (h) h.classList.add('active');
+                }
+                _updateStaticTabsVisibility();
                 refreshView(); updateLineNumbers(true);
             }
             saveData();
@@ -11740,6 +11780,12 @@
                 const cur = activeExt.replace('_custom_', '');
                 _getCustomFiles()[cur] = input.value;
                 saveData();
+                refreshView();
+                updateStats();
+                updateLineNumbers(false);
+                clearTimeout(previewTimeout);
+                if (previewDelay > 0) previewTimeout = setTimeout(() => { updatePreview(); }, previewDelay);
+                else updatePreview();
                 return;
             }
             
@@ -12038,11 +12084,83 @@ ${_e}` : '';
             return html;
         }
 
+        function _buildMarkdownPreview(mdContent, fname) {
+            const htmlBody = (typeof marked !== 'undefined')
+                ? (typeof marked.parse === 'function' ? marked.parse(mdContent) : marked(mdContent))
+                : mdContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+            const isDark = !document.body.classList.contains('light-mode');
+            const bg      = isDark ? '#09090b' : '#ffffff';
+            const text    = isDark ? '#e4e4e7' : '#18181b';
+            const muted   = isDark ? '#71717a' : '#52525b';
+            const border  = isDark ? '#27272a' : '#e4e4e7';
+            const codeBg  = isDark ? '#18181b' : '#f4f4f5';
+            const linkColor = isDark ? '#60a5fa' : '#2563eb';
+            return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:${bg};color:${text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;line-height:1.75;padding:40px 24px;max-width:800px;margin:0 auto;}
+h1,h2,h3,h4,h5,h6{margin:1.4em 0 0.5em;font-weight:700;line-height:1.25;color:${text};}
+h1{font-size:2em;border-bottom:1px solid ${border};padding-bottom:0.3em;}
+h2{font-size:1.5em;border-bottom:1px solid ${border};padding-bottom:0.2em;}
+h3{font-size:1.25em;}
+p{margin:0.75em 0;}
+a{color:${linkColor};text-decoration:none;}a:hover{text-decoration:underline;}
+code{background:${codeBg};padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',Consolas,monospace;font-size:0.875em;color:${isDark?'#e879f9':'#9333ea'};}
+pre{background:${codeBg};border:1px solid ${border};border-radius:8px;padding:16px;overflow-x:auto;margin:1em 0;}
+pre code{background:none;padding:0;color:${isDark?'#e2e8f0':text};font-size:0.875em;}
+blockquote{border-left:4px solid ${linkColor};margin:1em 0;padding:8px 16px;background:${isDark?'rgba(96,165,250,0.07)':'rgba(37,99,235,0.05)'};border-radius:0 6px 6px 0;color:${muted};}
+ul,ol{margin:0.75em 0 0.75em 1.5em;}li{margin:0.25em 0;}
+table{border-collapse:collapse;width:100%;margin:1em 0;}
+th,td{border:1px solid ${border};padding:8px 12px;text-align:left;}
+th{background:${codeBg};font-weight:600;}
+tr:nth-child(even){background:${isDark?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.02)'};}
+img{max-width:100%;border-radius:6px;}
+hr{border:none;border-top:1px solid ${border};margin:1.5em 0;}
+input[type=checkbox]{margin-right:6px;}
+.md-filename{font-size:11px;color:${muted};font-family:'JetBrains Mono',monospace;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid ${border};display:flex;align-items:center;gap:6px;}
+</style></head><body>
+<div class="md-filename"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${fname||'README.md'}</div>
+${htmlBody}
+</body></html>`;
+        }
+
         function updatePreview() {
             if (!activeProj || !db[activeProj]) return;
             if (typeof _CS !== 'undefined') _CS.previews++;
             const frame = document.getElementById('previewFrame');
             const lang = db[activeProj]._lang || 'web';
+
+            // ── Markdown project: always render markdown preview ──
+            if (lang === 'markdown') {
+                const customFiles = db[activeProj]._customFiles || {};
+                // Use the currently active .md file, or fall back to first .md in the project
+                let fname = null;
+                let mdContent = '';
+                if (activeExt && activeExt.startsWith('_custom_')) {
+                    const activeName = activeExt.replace('_custom_', '');
+                    if (activeName.toLowerCase().endsWith('.md')) {
+                        fname = activeName;
+                        mdContent = customFiles[fname] || '';
+                    }
+                }
+                if (!fname) {
+                    fname = Object.keys(customFiles).find(f => f.toLowerCase().endsWith('.md')) || 'README.md';
+                    mdContent = customFiles[fname] || '';
+                }
+                frame.srcdoc = _buildMarkdownPreview(mdContent, fname);
+                return;
+            }
+
+            // ── Non-markdown project: active custom file is .md → render markdown ──
+            if (activeExt && activeExt.startsWith('_custom_')) {
+                const fname = activeExt.replace('_custom_', '');
+                const ext = (fname.split('.').pop() || '').toLowerCase();
+                if (ext === 'md') {
+                    const mdContent = (db[activeProj]._customFiles || {})[fname] || '';
+                    frame.srcdoc = _buildMarkdownPreview(mdContent, fname);
+                    return;
+                }
+            }
 
             if (lang !== 'web') {
                 const langLabels = { python:'Python', ts:'TypeScript', java:'Java', cpp:'C / C++', js:'JavaScript', blank:'Blank' };
@@ -12467,18 +12585,18 @@ localStorage.removeItem('key');`);
             if (htmlEl) htmlEl.style.display = (show && isWeb) ? '' : 'none';
             if (cssEl)  cssEl.style.display  = (show && isWeb) ? '' : 'none';
 
-            // js tab always shows when project is active, but label changes per language
+            // js tab: hide for markdown (only .md files needed), show for everything else
             if (jsEl) {
-                jsEl.style.display = show ? '' : 'none';
-                if (show) {
+                jsEl.style.display = (show && lang !== 'markdown') ? '' : 'none';
+                if (show && lang !== 'markdown') {
                     const langMeta = {
-                        python: { icon: 'fab fa-python', color: '#3572a5', label: 'main.py' },
-                        ts:     { icon: 'fab fa-js',     color: '#3178c6', label: 'main.ts' },
-                        java:   { icon: 'fab fa-java',   color: '#f89820', label: 'Main.java' },
-                        cpp:    { icon: 'fas fa-code',   color: '#00599c', label: 'main.cpp' },
-                        js:     { icon: 'fab fa-js',     color: '#f7df1e', label: 'main.js' },
-                        web:    { icon: 'fab fa-js',     color: '#f7df1e', label: 'main.js' },
-                        blank:  { icon: 'fas fa-file',   color: 'var(--text-dim)', label: 'main.js' },
+                        python:   { icon: 'fab fa-python', color: '#3572a5', label: 'main.py' },
+                        ts:       { icon: 'fab fa-js',     color: '#3178c6', label: 'main.ts' },
+                        java:     { icon: 'fab fa-java',   color: '#f89820', label: 'Main.java' },
+                        cpp:      { icon: 'fas fa-code',   color: '#00599c', label: 'main.cpp' },
+                        js:       { icon: 'fab fa-js',     color: '#f7df1e', label: 'main.js' },
+                        web:      { icon: 'fab fa-js',     color: '#f7df1e', label: 'main.js' },
+                        blank:    { icon: 'fas fa-file',   color: 'var(--text-dim)', label: 'main.js' },
                     };
                     const meta = langMeta[lang] || langMeta.js;
                     jsEl.innerHTML = `<i class="${meta.icon}" style="color:${meta.color}"></i> ${meta.label}<div class="presence-avatars" id="presence-js"></div>`;
@@ -12536,8 +12654,17 @@ localStorage.removeItem('key');`);
                     if(e.target.tagName === 'I') return;
                     activeProj = name; localStorage.setItem('cs_v9_active_proj', name);
                     const projLang = db[name]?._lang || 'web';
-                    activeExt = projLang === 'web' ? 'html' : 'js';
-                    updateProjectList(); switchFile(activeExt); updatePreview(); renderCustomFiles(); if (typeof window.refreshSplitTabs === 'function') window.refreshSplitTabs();
+                    updateProjectList(); _updateStaticTabsVisibility(); renderCustomFiles();
+                    if (projLang === 'markdown') {
+                        const mdFiles = db[name]?._customFiles || {};
+                        const firstMd = Object.keys(mdFiles).find(f => f.toLowerCase().endsWith('.md'));
+                        if (firstMd) { switchCustomFile(firstMd); }
+                        else { updatePreview(); }
+                    } else {
+                        activeExt = projLang === 'web' ? 'html' : 'js';
+                        switchFile(activeExt); updatePreview();
+                    }
+                    if (typeof window.refreshSplitTabs === 'function') window.refreshSplitTabs();
                     if(collabRoom) broadcastProjectSync();
                 };
                 ui.appendChild(item);
@@ -12557,13 +12684,14 @@ localStorage.removeItem('key');`);
             if (!lang) return; // cancelled
 
             const templates = {
-                web:    { html: '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>' + name + '</title>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n\n</body>\n<sc' + 'ript src="main.js"><\/sc' + 'ript>\n</html>', css: '', js: '' },
-                js:     { html: '', css: '', js: '// ' + name + '\n' },
-                python: { html: '', css: '', js: '# ' + name + '\n' },
-                cpp:    { html: '', css: '', js: '// ' + name + '\n#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}\n' },
-                java:   { html: '', css: '', js: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n' },
-                ts:     { html: '', css: '', js: '// ' + name + '\n' },
-                blank:  { html: '', css: '', js: '' },
+                web:      { html: '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>' + name + '</title>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n\n</body>\n<sc' + 'ript src="main.js"><\/sc' + 'ript>\n</html>', css: '', js: '' },
+                js:       { html: '', css: '', js: '// ' + name + '\n' },
+                python:   { html: '', css: '', js: '# ' + name + '\n' },
+                cpp:      { html: '', css: '', js: '// ' + name + '\n#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}\n' },
+                java:     { html: '', css: '', js: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n' },
+                ts:       { html: '', css: '', js: '// ' + name + '\n' },
+                markdown: { html: '', css: '', js: '', _customFiles: { 'README.md': '# ' + name + '\n\nWrite your documentation here.\n' } },
+                blank:    { html: '', css: '', js: '' },
             };
 
             db[name] = templates[lang] || templates.blank;
@@ -12571,9 +12699,11 @@ localStorage.removeItem('key');`);
             saveData(); activeProj = name;
             updateProjectList(); updatePreview();
             _updateStaticTabsVisibility();
+            renderCustomFiles();
 
             // Switch to the right file based on language
             if (lang === 'web') { switchFile('html'); }
+            else if (lang === 'markdown') { switchCustomFile('README.md'); }
             else { switchFile('js'); }
 
             if(collabRoom) broadcastProjectSync();
@@ -12586,13 +12716,14 @@ localStorage.removeItem('key');`);
                 document.getElementById('_langPickerOverlay')?.remove();
 
                 const langs = [
-                    { id: 'web',    icon: 'fab fa-html5',    color: '#e44d26', label: 'HTML / CSS / JS' },
-                    { id: 'js',     icon: 'fab fa-js',        color: '#f7df1e', label: 'JavaScript' },
-                    { id: 'ts',     icon: 'fab fa-js',        color: '#3178c6', label: 'TypeScript' },
-                    { id: 'python', icon: 'fab fa-python',    color: '#3572a5', label: 'Python' },
-                    { id: 'cpp',    icon: 'fas fa-code',      color: '#00599c', label: 'C / C++' },
-                    { id: 'java',   icon: 'fab fa-java',      color: '#f89820', label: 'Java' },
-                    { id: 'blank',  icon: 'fas fa-file',      color: 'var(--text-dim)', label: 'Blank' },
+                    { id: 'web',      icon: 'fab fa-html5',    color: '#e44d26', label: 'HTML / CSS / JS' },
+                    { id: 'js',       icon: 'fab fa-js',        color: '#f7df1e', label: 'JavaScript' },
+                    { id: 'ts',       icon: 'fab fa-js',        color: '#3178c6', label: 'TypeScript' },
+                    { id: 'python',   icon: 'fab fa-python',    color: '#3572a5', label: 'Python' },
+                    { id: 'markdown', icon: 'fab fa-markdown',  color: '#e4e4e7', label: 'Markdown' },
+                    { id: 'cpp',      icon: 'fas fa-code',      color: '#00599c', label: 'C / C++' },
+                    { id: 'java',     icon: 'fab fa-java',      color: '#f89820', label: 'Java' },
+                    { id: 'blank',    icon: 'fas fa-file',      color: 'var(--text-dim)', label: 'Blank' },
                 ];
 
                 const overlay = document.createElement('div');
@@ -12650,8 +12781,19 @@ localStorage.removeItem('key');`);
                 const remaining = Object.keys(db);
                 activeProj = remaining.length > 0 ? remaining[0] : null;
                 saveData(); updateProjectList();
-                if (activeProj) { const dl = db[activeProj]?._lang||'web'; switchFile(dl==='web'?'html':'js'); updatePreview(); }
-                else { _showEmptyEditorState(); }
+                if (activeProj) {
+                    const dl = db[activeProj]?._lang || 'web';
+                    renderCustomFiles();
+                    _updateStaticTabsVisibility();
+                    if (dl === 'markdown') {
+                        const mdFiles = db[activeProj]._customFiles || {};
+                        const firstMd = Object.keys(mdFiles).find(f => f.toLowerCase().endsWith('.md'));
+                        if (firstMd) switchCustomFile(firstMd); else updatePreview();
+                    } else {
+                        switchFile(dl === 'web' ? 'html' : 'js');
+                        updatePreview();
+                    }
+                } else { _showEmptyEditorState(); }
                 if(collabRoom) broadcastProjectSync();
             }
         }
@@ -12672,6 +12814,7 @@ localStorage.removeItem('key');`);
             const tabEl = document.getElementById(`f-${ext}`);
             if (tabEl) tabEl.classList.add('active');
             output.className = `language-${ext === 'js' ? 'javascript' : ext}`;
+            _updateStaticTabsVisibility();
             refreshView();
             updateLineNumbers(true);
             broadcastFilePresence(ext);
@@ -15452,7 +15595,8 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
         // Default split file: pick something different from the active main file
         const mainExt = typeof activeExt !== 'undefined' ? activeExt : 'html';
         // Build full file list from project
-        const _allExts = ['html','css','js'].filter(e =>
+        const _projLang = (typeof db !== 'undefined' && typeof activeProj !== 'undefined') ? (db[activeProj]?._lang || 'web') : 'web';
+        const _allExts = (_projLang === 'markdown') ? [] : ['html','css','js'].filter(e =>
             typeof db !== 'undefined' && typeof activeProj !== 'undefined' && db[activeProj]?.[e] !== undefined
         );
         if (typeof db !== 'undefined' && typeof activeProj !== 'undefined' && db[activeProj]?._customFiles) {
@@ -15493,18 +15637,21 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
 
         // Build file list from actual project files
         const files = [];
+        const _splitProjLang = (typeof db !== 'undefined' && typeof activeProj !== 'undefined') ? (db[activeProj]?._lang || 'web') : 'web';
 
-        // Core files — only include if they exist in the project
+        // Core files — only include if they exist in the project AND project is not markdown
         const coreFiles = [
             { ext: 'html', label: 'index.html',  icon: 'fab fa-html5',    color: '#e44d26' },
             { ext: 'css',  label: 'style.css',   icon: 'fab fa-css3-alt', color: '#264de4' },
             { ext: 'js',   label: 'main.js',     icon: 'fab fa-js',       color: '#f7df1e' },
         ];
-        coreFiles.forEach(f => {
-            if (typeof db !== 'undefined' && typeof activeProj !== 'undefined' && db[activeProj] && db[activeProj][f.ext] !== undefined) {
-                files.push(f);
-            }
-        });
+        if (_splitProjLang !== 'markdown') {
+            coreFiles.forEach(f => {
+                if (typeof db !== 'undefined' && typeof activeProj !== 'undefined' && db[activeProj] && db[activeProj][f.ext] !== undefined) {
+                    files.push(f);
+                }
+            });
+        }
 
         // Custom files
         if (typeof db !== 'undefined' && typeof activeProj !== 'undefined' && db[activeProj]?._customFiles) {
@@ -15522,8 +15669,8 @@ JS:\n\`\`\`javascript\n${(db[activeProj]?.js || '').slice(0,800)}\n\`\`\``;
             });
         }
 
-        // Fallback: if project somehow has no files yet, show the three defaults
-        if (files.length === 0) {
+        // Fallback: if project somehow has no files yet, show the three defaults (web projects only)
+        if (files.length === 0 && _splitProjLang !== 'markdown') {
             [
                 { ext: 'html', label: 'index.html', icon: 'fab fa-html5',    color: '#e44d26' },
                 { ext: 'css',  label: 'style.css',  icon: 'fab fa-css3-alt', color: '#264de4' },
